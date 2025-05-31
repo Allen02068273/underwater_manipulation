@@ -1,0 +1,6 @@
+(define (problem HOOKING)
+  (:domain HOOKS)
+  (:objects A B C - hook)
+  (:init (holdingLoop))
+  (:goal (and (hooked A) (hooked B) (hooked C)))
+)

@@ -1,0 +1,5 @@
+(place-loop c)
+(request-loop)
+(place-loop a)
+(request-loop)
+(place-loop b)
