@@ -177,10 +177,7 @@ class GamepadKeyboardControl(Node):
 
         # send command to gripper
         gripper_msg = Float32MultiArray()
-        if self.gripper_open:
-            gripper_msg.data = [4.0, 2.10]
-        else:
-            gripper_msg.data = [2.0, 2.10]
+        gripper_msg.data = [4.0, 2.10] if self.gripper_open else [2.0, 2.10]
         self.gripper_publisher.publish(gripper_msg)
 
 def main(args=None):

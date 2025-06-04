@@ -27,6 +27,12 @@ def generate_launch_description():
         default_value='',
         description='AprilTag size in meters'
     )
+    # argument to choose which frame to target
+    target_frame_arg = DeclareLaunchArgument(
+        'target_frame',
+        default_value='target_2',
+        description='Target on which to perform skill (e.g. target_2)'
+    )
 
     generator_executable = PythonExpression([
         '"', LaunchConfiguration('generator'), '_trajectory_generator"'
@@ -51,6 +57,7 @@ def generate_launch_description():
         generator_arg,
         serial_port_arg,
         apriltag_size_arg,
+        target_frame_arg,
         included_launch,
         Node(
             package='trajectory_generation',
@@ -62,7 +69,10 @@ def generate_launch_description():
         Node(
             package='record_skill',
             executable='perform_skill',
-            parameters=[{"serial_port" : LaunchConfiguration('serial_port')}]
+            parameters=[{
+                "serial_port" : LaunchConfiguration('serial_port'),
+                "target_frame" : LaunchConfiguration('target_frame')
+                }]
             )
             
     ])

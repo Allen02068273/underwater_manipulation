@@ -23,7 +23,7 @@ all_min, all_max = all_min - global_range, all_max + global_range
 
 # Plot back view
 ax1 = fig.add_subplot(1, 3, 1)
-ax1.plot(-df['y'], df['z'], label='Gripper Estimated Path', color='blue', marker='o', markersize=3, linestyle='-')
+ax1.plot(-df['y'].to_numpy(), df['z'].to_numpy(), label='Gripper Estimated Path', color='blue', marker='o', markersize=3, linestyle='-')
 ax1.scatter(0, 0, color='red', marker='x', s=100, label="AprilTag")
 ax1.set_xlabel("Y (Horizontal)")
 ax1.set_ylabel("Z (Height)")
@@ -35,7 +35,7 @@ ax1.grid()
 
 # Plot side view
 ax2 = fig.add_subplot(1, 3, 2)
-ax2.plot(df['x'], df['z'], label='Gripper Estimated Path', color='blue', marker='o', markersize=3, linestyle='-')
+ax2.plot(df['x'].to_numpy(), df['z'].to_numpy(), label='Gripper Estimated Path', color='blue', marker='o', markersize=3, linestyle='-')
 ax2.scatter(0, 0, color='red', marker='x', s=100, label="AprilTag")
 ax2.set_xlabel("X (Depth)")
 ax2.set_ylabel("Z (Height)")
@@ -47,7 +47,7 @@ ax2.grid()
 
 # Plot top view
 ax3 = fig.add_subplot(1, 3, 3)
-ax3.plot(-df['y'], df['x'], label='Gripper Estimated Path', color='blue', marker='o', markersize=3, linestyle='-')
+ax3.plot(-df['y'].to_numpy(), df['x'].to_numpy(), label='Gripper Estimated Path', color='blue', marker='o', markersize=3, linestyle='-')
 ax3.scatter(0, 0, color='red', marker='x', s=100, label="AprilTag")
 ax3.set_xlabel("Y (Horizontal)")
 ax3.set_ylabel("X (Depth)")

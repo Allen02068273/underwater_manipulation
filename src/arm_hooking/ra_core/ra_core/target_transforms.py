@@ -176,9 +176,6 @@ class TargetTransforms(Node):
         tfs.transform.rotation.w = ukf.x[6]
         return tfs
 
-    def __del__(self):
-        self.cap.release()
-
 def main(args=None):
     rclpy.init(args=args)
     node = TargetTransforms()

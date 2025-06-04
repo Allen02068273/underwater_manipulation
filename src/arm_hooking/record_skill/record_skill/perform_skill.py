@@ -12,20 +12,13 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import control
 
-from bplprotocol import BPLProtocol, PacketID
-import serial
-import socket
-
 class SkillPerformer(Node):
 
     def __init__(self):
         super().__init__('skill_performer')
 
-        # parameter for serial port name to connect to the manipulator
-        self.declare_parameter('serial_port', '/dev/ttyUSB0')
-        serial_port_name = self.get_parameter('serial_port').value
         # parameter for the speed with which to follow the trajectory in m/s
-        self.declare_parameter('speed', 0.025)
+        self.declare_parameter('speed', 0.05)
         self.speed = float(self.get_parameter('speed').value)
         # parameter for the speed with which to follow the trajectory in m/s
         self.declare_parameter('target_frame', 'target_2')
@@ -139,9 +132,10 @@ class SkillPerformer(Node):
 
         self.apply_lqr(trans)
 
-        self.publish_pose(self.position[0], self.position[1], self.position[2], gripper_open=False)
-        # return arm to ready pose
-        # self.publish_pose(0.000, 0.024 + 0.120, 0.179, gripper_open=False)
+        if self.trajectory_index < len(self.trajectory)-1:
+            self.publish_pose(self.position[0], self.position[1], self.position[2], gripper_open=False)
+        else:
+            self.publish_pose(0.000, 0.120, 0.150, gripper_open=True)
 
         #self.step_timer.cancel()
 
@@ -225,7 +219,7 @@ class SkillPerformer(Node):
 
         # translate hook position backward to end effector position
         tool_pos = trans_tool.transform.translation
-        offset_vector = -np.array([tool_pos.x, tool_pos.y, tool_pos.z]) # hook offset from end effector in meters
+        offset_vector = -np.array([tool_pos.x, tool_pos.y, tool_pos.z])  # hook offset from end effector in meters
         rotated_offset = rotation_matrix @ offset_vector
         x += rotated_offset[0]
         y += rotated_offset[1]
@@ -242,7 +236,7 @@ class SkillPerformer(Node):
         self.get_logger().info(f"Published trajectory step {self.trajectory_index + 1} at xyz {pose_stamped.pose.position.x} {pose_stamped.pose.position.y} {pose_stamped.pose.position.z}.")
 
         # set gripper joint positions
-        gripper_position = [3.7, 2.10] if gripper_open else [3.35, 2.10]
+        gripper_position = [4.0, 2.10] if gripper_open else [2.0, 2.10]
 
         # publish gripper command
         gripper_msg = Float32MultiArray()

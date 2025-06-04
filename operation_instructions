@@ -1,16 +1,17 @@
 Instructions to Connect to Reach Alpha 5 via Terminal
 by Nolan Allen
 14 January 2025
+Last updated 4 June 2025
 
 Open a terminal and run the following:
   source /opt/ros/humble/setup.bash
-  cd ~/arm_hooking
+  cd ~/underwater_manipulation
   colcon build
   source ./install/local_setup.bash
 
 Open subsequent terminals with the following:
   source /opt/ros/humble/setup.bash
-  cd ~/arm_hooking
+  cd ~/underwater_manipulation
   source ./install/local_setup.bash
 
 Next use the following commands to run the various programs:
@@ -24,7 +25,7 @@ Next use the following commands to run the various programs:
 Launch Files [parameters]
 arm_control
   gamepad_keyboard_control.launch.py [serial_port, apriltag_size]
-  arm_controller.launch.py [master_arm_serial_port, serial_port, apriltag_size]
+  master_arm_control.launch.py [master_arm_serial_port, serial_port, apriltag_size]
 visualization
   apriltag_pose.launch.py [serial_port, apriltag_size]
   focus_detection.launch.py [serial_port, apriltag_size, record_output, focus_threshold]

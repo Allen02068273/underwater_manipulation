@@ -40,7 +40,7 @@ class TrajectoryVisualizer(Node):
         trajectories = []
         # Get the list of CSV files, each containing one trajectory
         csv_files = ['data/trajectory.csv']
-        csv_files = ['data/demos/trajectory_1.csv', 'data/demos/trajectory_2.csv', 'data/demos/trajectory_3.csv', 'data/demos/trajectory_4.csv']
+        # csv_files = ['data/demos/trajectory_1.csv', 'data/demos/trajectory_2.csv', 'data/demos/trajectory_3.csv', 'data/demos/trajectory_4.csv']
 
         self.target_name = 'target_2'
 
@@ -101,7 +101,7 @@ class TrajectoryVisualizer(Node):
     def initialize_plot(self):
         plt.ion()
         self.fig, self.axes = plt.subplots(1, 3, figsize=(18, 6))
-        self.colors = ['red', 'orange', 'green', 'purple', 'brown']
+        self.colors = ['orange', 'red', 'green', 'purple', 'brown']
 
     def plot_trajectories(self):
         # Clear previous plots

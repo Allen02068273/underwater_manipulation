@@ -11,6 +11,8 @@ class SkillRecorder(Node):
 
     def __init__(self):
         super().__init__('skill_recorder')
+
+        self.localize_continuously = True  # True: more accurate but noisier; False: more precise but less accurate
         
         # transform listener for target/base/tool transforms
         self._tf_buffer = Buffer()
@@ -39,8 +41,7 @@ class SkillRecorder(Node):
 
         # try getting the transform of the tool in the target frame
         try:
-            #tf_tool_in_target = self._tf_buffer.lookup_transform('target_2', 'reach_alpha_tool', rclpy.time.Time())
-            if self.trans_base_to_target is None:
+            if self.trans_base_to_target is None or self.localize_continuously:
                 self.trans_base_to_target = self._tf_buffer.lookup_transform('target_2', 'reach_alpha_base', rclpy.time.Time())
             tf_tool_in_base = self._tf_buffer.lookup_transform('reach_alpha_base', 'reach_alpha_tool', rclpy.time.Time())
         except (LookupException, ConnectivityException) as e:
