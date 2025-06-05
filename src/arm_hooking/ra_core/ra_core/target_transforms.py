@@ -53,7 +53,7 @@ class TargetTransforms(Node):
         self.add_static_tfs('map', 'reach_alpha_base')  # anchors the tf tree in rviz
         self.add_static_tfs('reach_alpha_base', 'brov_camera', position=(-0.1975, 0.1075, -0.0375), q=(1,0,0,0))  # calibrate with get_brov_cam_pose.py
         self.add_static_tfs('reach_alpha_end_effector', 'reach_alpha_camera', position=(-0.026, 0, 0.033))  # camera offset from end effector
-        self.add_static_tfs('reach_alpha_end_effector', 'reach_alpha_tool', position=(0.130, 0, 0))  # tool offset from end effector - this is the point that is recorded in trajectories
+        self.add_static_tfs('reach_alpha_end_effector', 'reach_alpha_tool', position=(0.140, 0, 0))  # tool offset from end effector - this is the point that is recorded in trajectories
         #self.add_static_tfs('apriltag', 'target', position=(-0.05, 0, -self.tag_size/2 - 0.015))  # target offset from AprilTag - trajectories are recorded in the target frame
         for i in tag_ids:  # multiple AprilTags
             self.add_static_tfs(f'apriltag_{i}', f'target_{i}', position=(-0.08, 0, -self.tag_size/2 - 0.017))
@@ -93,7 +93,7 @@ class TargetTransforms(Node):
         ukf = UnscentedKalmanFilter(dim_x=7, dim_z=7, dt=0.1, fx=state_transition_function, hx=measurement_function, points=points)
         ukf.x = init_x
         ukf.P = np.eye(7)  # initial uncertainty
-        ukf.R = np.diag([5.0]*3 + [10.0]*4)  # [pos noise, orientation noise]
+        ukf.R = np.diag([5.0]*3 + [30.0]*4)  # [pos noise, orientation noise]
         return ukf
     
     def broadcast_static_tfs(self):
