@@ -33,6 +33,7 @@ class SkillRecorder(Node):
 
         # start timer for recording
         hz = 10  # entries added per second
+        self.get_logger().info(f"Waiting for transform...")
         self.recorder_timer = self.create_timer(1/hz, self.recorder)
 
     def recorder(self):
@@ -45,7 +46,6 @@ class SkillRecorder(Node):
                 self.trans_base_to_target = self._tf_buffer.lookup_transform('target_2', 'reach_alpha_base', rclpy.time.Time())
             tf_tool_in_base = self._tf_buffer.lookup_transform('reach_alpha_base', 'reach_alpha_tool', rclpy.time.Time())
         except (LookupException, ConnectivityException) as e:
-            self.get_logger().info(f"Waiting for transform {repr(e)}.")
             return
         
         p = Pose()

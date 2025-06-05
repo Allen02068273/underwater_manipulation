@@ -7,7 +7,7 @@ import apriltag
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from ra_core.video import Video
+from ra_core.utils.video import Video
 
 class AprilTagPosePublisher(Node):
 

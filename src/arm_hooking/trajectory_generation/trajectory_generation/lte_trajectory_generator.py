@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import interpolate
 from geometry_msgs.msg import Point
 from std_msgs.msg import Float32MultiArray
+from trajectory_generation.utils.lte import LTE
 
 class LTETrajectoryNode(Node):
     def __init__(self):
@@ -86,55 +87,17 @@ class LTETrajectoryNode(Node):
 
         return smoothed_traj
 
-
     def request_callback(self, msg):
         # generate LTE trajectory starting from input point
         start_point = np.array([msg.x, msg.y, msg.z])
         end_point = np.array([self.traj[-1, 0], self.traj[-1, 1], self.traj[-1, 2]])
-        new_traj = self.LTE(self.traj, [start_point, end_point], [0, len(self.traj) - 1])
+        new_traj = LTE(self.traj, [start_point, end_point], [0, len(self.traj) - 1])
 
         # publish the generated trajectory
         traj_msg = Float32MultiArray()
         traj_msg.data = new_traj.flatten().tolist()
         self.publisher.publish(traj_msg)
         self.get_logger().info("Published LTE trajectory.")
-
-    def LTE(self, X, C, inds):
-        n_pts, n_dims = np.shape(X)
-        L = self.generate_laplacian(n_pts)
-        D = self.laplacian_transform(L, X)
-        P = self.append_constraints(D, C, inds)
-        new_L = self.append_weights(L, C, inds)
-        new_X = self.cartesian_transform(new_L, P)
-        return new_X
-
-    def generate_laplacian(self, n_pts):
-        L = 2.*np.diag(np.ones((n_pts,))) - np.diag(np.ones((n_pts-1,)),1) - np.diag(np.ones((n_pts-1,)),-1)
-        L[0,1] = -2.
-        L[-1,-2] = -2.
-        L = L / 2.
-        return L
-
-    def laplacian_transform(self, L, X):
-        D = np.matmul(L, X)
-        return D
-        
-    def append_constraints(self, D, C, inds):
-        for const in C:
-            D = np.vstack((D, const.reshape((1, len(const))) * self.fixed_weight))
-        return D
-
-    def append_weights(self, L, C, inds):
-        n_pts = len(L)
-        for i in inds:
-            to_append = np.ones((1, n_pts))
-            to_append[0, i] = self.fixed_weight
-            L = np.vstack((L, to_append))
-        return L
-        
-    def cartesian_transform(self, new_L, P):
-        new_traj, _, _, _ = np.linalg.lstsq(new_L, P, rcond=-1)
-        return new_traj
 
 def main(args=None):
     rclpy.init(args=args)
