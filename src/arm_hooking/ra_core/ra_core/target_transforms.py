@@ -13,6 +13,8 @@ from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.monte_carlo import systematic_resample
 
+from scipy.spatial.transform import Rotation as R
+
 class TargetTransforms(Node):
 
     ''' Transform frames:
@@ -105,6 +107,13 @@ class TargetTransforms(Node):
         # avoid logging when end effector position is at origin (bug check)
         if msg.pose.position.x == 0.0 and msg.pose.position.y == 0.0 and msg.pose.position.z == 0.0:
             return
+        
+        # remove roll component (the camera is not affected by end effector roll)
+        q = msg.pose.orientation
+        roll, pitch, yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')
+        roll = 0.0
+        q.x, q.y, q.z, q.w = R.from_euler('xyz', [roll, pitch, yaw]).as_quat()
+        msg.pose.orientation = q
         
         msg.header.frame_id = 'reach_alpha_base'
         self.end_effector_tfb.sendTransform(self.pose_to_tf(msg, 'reach_alpha_end_effector'))
