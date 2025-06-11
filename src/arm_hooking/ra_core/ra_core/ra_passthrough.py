@@ -10,7 +10,9 @@ from rclpy.node import Node
 
 from bpl_msgs.msg import Packet
 
-from rs_protocol import RSProtocol, PacketID, Mode, create_socket_connection, create_serial_connection
+from rs_protocol import RSProtocol, PacketID, Mode, create_socket_connection, create_serial_connection, encode_floats, decode_floats
+
+import array
 
 
 class RAPassthrough(Node):
@@ -53,12 +55,25 @@ class RAPassthrough(Node):
         packet_id = packet.packet_id
         data = packet.data
 
+        # if not packet_id in PacketID.PacketType:
+        #     self.get_logger().info(f"Invalid packet_id: {packet_id}")
+        #     return
+
+        if isinstance(data, array.array):
+            data = list(data)
+
+        if PacketID.PacketType.get(packet_id) == float:
+            if isinstance(data, list):
+                data = bytes(data)
+            data = decode_floats(data)
+
         self.rs_protocol.write(device_id, packet_id, data)
         # self.rs_protocol.request(device_id, packet_id)  # use to request info; may be equivalent to self.rs_protocol.write(device_id, PacketID.REQUEST, packet_id)
 
     def rx_receive(self):
         # read from port and publish to topic
-        packets = self.rs_protocol.read()
+        # packets = self.rs_protocol.read()
+        packets = self.rs_protocol.read_raw()
         for packet in packets:
             device_id = packet[0]
             packet_id = packet[1]

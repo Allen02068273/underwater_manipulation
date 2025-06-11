@@ -2,6 +2,8 @@ from setuptools import setup, find_packages
 import os
 from glob import glob
 
+package_name = 'ra_core'
+
 setup(
     name=package_name,
     version='0.0.0',
@@ -21,6 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'ra_passthrough = ra_core.ra_passthrough:main',
+            'end_effector_pose_publisher = ra_core.end_effector_pose_publisher:main',
             'target_transforms = ra_core.target_transforms:main',
             'apriltag_pose_publisher = ra_core.apriltag_pose_publisher:main',
             'control_node = ra_core.control_node:main',

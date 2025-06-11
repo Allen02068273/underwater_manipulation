@@ -2,6 +2,8 @@ from setuptools import setup, find_packages
 import os
 from glob import glob
 
+package_name = 'trajectory_generation'
+
 setup(
     name=package_name,
     version='0.0.0',

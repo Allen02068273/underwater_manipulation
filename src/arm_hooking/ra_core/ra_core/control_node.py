@@ -4,7 +4,8 @@ from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 from bpl_msgs.msg import Packet
 
-from bplprotocol import BPLProtocol, PacketID
+# from bplprotocol import BPLProtocol, PacketID
+from rs_protocol import PacketID, encode_floats
 
 from geometry_msgs.msg import PoseStamped
 
@@ -57,7 +58,7 @@ class BPLControlNode(Node):
                     p = Packet()
                     p.device_id = device_id
                     p.packet_id = PacketID.POSITION
-                    p.data = list(BPLProtocol.encode_floats([position]))
+                    p.data = list(encode_floats([position]))
                     self.tx_publisher.publish(p)
 
         if self.velocity_command is not None:
@@ -68,14 +69,14 @@ class BPLControlNode(Node):
                     p = Packet()
                     p.device_id = device_id
                     p.packet_id = PacketID.VELOCITY
-                    p.data = list(BPLProtocol.encode_floats([velocity]))
+                    p.data = list(encode_floats([velocity]))
                     self.tx_publisher.publish(p)
 
         if self.km_command is not None:
             p = Packet()
-            p.packet_id = PacketID.KM_END_POS
+            p.packet_id = PacketID.INVERSE_KINEMATICS_GLOBAL_POSITION
             p.device_id = 0x0E
-            p.data = list(BPLProtocol.encode_floats(self.km_command))
+            p.data = list(encode_floats(self.km_command))
             self.tx_publisher.publish(p)
 
 

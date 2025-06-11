@@ -34,10 +34,20 @@ def generate_launch_description():
         serial_port_arg,
         apriltag_size_arg,
         Node(
-            package='bpl_passthrough',
-            executable='serial_passthrough',
-            parameters=[{"serial_port" : serial_port_param}]
+            package='ra_core',
+            executable='ra_passthrough',
+            parameters=[
+                {"connection_type" : "serial"},
+                {"serial_port" : serial_port_param},
+                # {"ip_address" : "192.168.2.2"},
+                # {"udp_port" : 6789},
+                ]
             ),
+        # Node(
+        #     package='bpl_passthrough',
+        #     executable='serial_passthrough',
+        #     parameters=[{"serial_port" : serial_port_param}]
+        #     ),
         # Node(
         #     package='bpl_passthrough',
         #     executable='udp_passthrough',
@@ -45,7 +55,7 @@ def generate_launch_description():
         #                  "port" : 6789}]
         #     ),
         Node(
-            package='bpl_control',
+            package='ra_core',
             executable='end_effector_pose_publisher',
             parameters=[{
                 "frame_id" : "alpha_base_link",
