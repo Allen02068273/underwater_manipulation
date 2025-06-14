@@ -1,13 +1,15 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TransformStamped
+from sensor_msgs.msg import Image
 
+from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import apriltag
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from ra_core.utils.video import Video
+# from ra_core.utils.video import Video
 
 class AprilTagPosePublisher(Node):
 
@@ -15,37 +17,40 @@ class AprilTagPosePublisher(Node):
         super().__init__('apriltag_pose_publisher')
 
         self.declare_parameter('apriltag_size', 0.0745)  # meters
-        self.declare_parameter('camera_tf_frame', 'reach_alpha_camera')
         self.declare_parameter('frequency', 30)  # Hz
         self.declare_parameter('display_feed', False)
+        self.declare_parameter('use_gstreamer', False)  # use GStreamer for low-latency RA camera feed
+        # note: enabling GStreamer will likely require building OpenCV from source with GStreamer enabled
 
         self.tag_size = float(self.get_parameter('apriltag_size').value)
-        self.camera_tf_frame = self.get_parameter('camera_tf_frame').value
         frequency = float(self.get_parameter('frequency').value)
         self.display_feed = self.get_parameter('display_feed').value
+        use_gstreamer = self.get_parameter('use_gstreamer').value
 
-        # publisher and timer for publishing AprilTag pose
+        # timer, subscriber, and publisher for processing and publishing AprilTag pose
+        self.ra_camera_timer = self.create_timer(1.0/frequency, self.ra_img_processing)
+        self.subscription = self.create_subscription(Image, '/my_camera/image_raw', self.brov_img_callback, 10)
         self.pose_publisher = self.create_publisher(TransformStamped, 'apriltag_pose', 10)
-        self.static_tf_broadcast_timer = self.create_timer(1.0/frequency, self.process_apriltags)
 
-        camera_calibration_path = None
+        self.bridge = CvBridge()
         
-        # GStreamer pipeline for low-latency stream
-        video_source = None
-        if self.camera_tf_frame == 'reach_alpha_camera':
-            rtsp_url = "rtsp://admin:@192.168.2.10:554/stream=1"
-            video_source = f'rtspsrc location={rtsp_url}'
-            camera_calibration_path = "data/camera_calibrations/camera_calibration_nerve_ra.npz"
+        video_source = "rtsp://admin:@192.168.2.10:554/stream=1"
+        if use_gstreamer:  # GStreamer pipeline for low-latency stream
+            video_source = f'rtspsrc location={video_source} latency=0 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink'
+            self.cap = cv2.VideoCapture(video_source, cv2.CAP_GSTREAMER)
         else:
-            port = 5600
-            video_source = f'udpsrc port={port}'
-            camera_calibration_path = "data/camera_calibrations/camera_calibration_brov.npz"
-        self.video = Video(video_source)
+            self.cap = cv2.VideoCapture(video_source)
+
+        # cancel the Reach Alpha image processing timer if the camera stream is not open
+        if not self.cap.isOpened():
+            self.ra_camera_timer.cancel()
+            self.get_logger().error(f"Can't open RTSP stream from Reach Alpha camera")
 
         # load camera calibration data
-        with np.load(camera_calibration_path) as data:
-            self.intrinsic_matrix = data["camera_matrix"]
-            self.dist_coeffs = data["dist_coeffs"]
+        with np.load("data/camera_calibrations/camera_calibration_nerve_ra.npz") as data:
+            self.ra_camera_calibration = (data["camera_matrix"], data["dist_coeffs"])
+        with np.load("data/camera_calibrations/camera_calibration_brov.npz") as data:
+            self.brov_camera_calibration = (data["camera_matrix"], data["dist_coeffs"])
 
         # initialize the AprilTag detector
         self.detector = apriltag.Detector()
@@ -55,30 +60,45 @@ class AprilTagPosePublisher(Node):
                                        [ self.tag_size/2,  self.tag_size/2, 0],
                                        [-self.tag_size/2,  self.tag_size/2, 0]], dtype=np.float32)
         
-        self.get_logger().info(f"Starting AprilTag pose publisher for {self.camera_tf_frame}")
-        
-    def process_apriltags(self):
-        # detect AprilTags in the camera stream
-        if not self.video.frame_available():
+    def ra_img_processing(self):
+        # read in the next frame from the camera stream
+        ret, frame = cap.read()
+        if not ret:
+            self.ra_camera_timer.cancel()
+            self.get_logger().error(f"Unable to continue reading RTSP stream from Reach Alpha camera")
             return
-        frame = self.video.frame()
-        
+
+        # detect AprilTags
+        self.process_frame(frame, 'reach_alpha_camera', self.ra_camera_calibration)
+
+    def brov_img_callback(self, msg):
+        # convert ROS Image message to OpenCV image
+        try:
+            cv_frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        except CvBridgeError as e:
+            self.get_logger().error(f'CvBridge Error: {e}')
+
+        # detect AprilTags
+        self.process_frame(frame, 'reach_alpha_camera', self.brov_camera_calibration)
+
+    def process_frame(self, frame, tf_frame, camera_calibration):
         # estimate the image's timestamp
         stamp = self.get_clock().now() - rclpy.time.Duration(seconds=0.04)
-
+        
         # detect AprilTags
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         tags = self.detector.detect(gray)
 
-        # compute the transformation from the robot's base frame to the AprilTag's frame
+        # compute the transformation from the camera's frame to the AprilTag's frame
         for tag in tags:
-            self.process_tag(tag, stamp, self.camera_tf_frame, (self.intrinsic_matrix, self.dist_coeffs))
+            self.process_tag(tag, stamp, tf_frame, camera_calibration)
 
+        # display the camera frame if requested by the user
         if self.display_feed:
-            cv2.imshow(self.camera_tf_frame, frame)
+            cv2.imshow(tf_frame, frame)
             cv2.waitKey(1)
 
-    def process_tag(self, tag, stamp, camera_frame, camera_calibration):
+    def process_tag(self, tag, stamp, tf_frame, camera_calibration):
         corners = tag.corners
 
         # estimate the pose of the tag
@@ -89,7 +109,7 @@ class AprilTagPosePublisher(Node):
         if not success:
             return
         
-        # convert to robot's coordinate system
+        # convert to ROS2's coordinate system
         tag_translation_vector = np.array([tag_translation_vector[2], -tag_translation_vector[0], -tag_translation_vector[1]])
         rotation_matrix, _ = cv2.Rodrigues(tag_rotation_vector)
         tag_quaternion = Rotation.from_matrix(rotation_matrix).as_quat()
@@ -98,7 +118,7 @@ class AprilTagPosePublisher(Node):
         # convert to a TransformStamped and publish
         tfs = TransformStamped()
         tfs.header.stamp = stamp.to_msg()
-        tfs.header.frame_id = camera_frame
+        tfs.header.frame_id = tf_frame
         tfs._child_frame_id = f'apriltag_{tag.tag_id}'
         tfs.transform.translation.x = float(tag_translation_vector[0])
         tfs.transform.translation.y = float(tag_translation_vector[1])
@@ -108,6 +128,10 @@ class AprilTagPosePublisher(Node):
         tfs.transform.rotation.z = tag_quaternion[2]
         tfs.transform.rotation.w = tag_quaternion[3]
         self.pose_publisher.publish(tfs)
+
+def __del__(self):
+    cap.release()
+    cv2.destroyAllWindows()
 
 def main(args=None):
     rclpy.init(args=args)
