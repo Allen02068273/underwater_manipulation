@@ -85,20 +85,8 @@ def generate_launch_description():
         Node(
             package='ra_core',
             executable='apriltag_pose_publisher',
-            name='apriltag_publisher_reach_alpha',
             parameters=[{
                 "apriltag_size" : apriltag_size_param,
-                "camera_tf_frame" : "reach_alpha_camera",
-                "display_feed" : True,
-                }]
-            ),
-        Node(
-            package='ra_core',
-            executable='apriltag_pose_publisher',
-            name='apriltag_publisher_brov',
-            parameters=[{
-                "apriltag_size" : apriltag_size_param,
-                "camera_tf_frame" : "brov_camera",
                 "display_feed" : True,
                 }]
             ),
