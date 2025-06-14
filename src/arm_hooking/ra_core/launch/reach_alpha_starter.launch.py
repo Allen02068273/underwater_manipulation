@@ -1,8 +1,12 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.substitutions import LaunchConfiguration, PythonExpression, TextSubstitution
 
 from launch_ros.actions import Node
+
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.substitutions import FindPackageShare
+import os
 
 def generate_launch_description():
     # Note: The real default argument values are set here in a PythonExpression
@@ -30,7 +34,19 @@ def generate_launch_description():
         '0.0715 if "', LaunchConfiguration('apriltag_size'), '" == "" else float("', LaunchConfiguration('apriltag_size'), '")'
     ])
 
+    # import the launch file for the BROV camera publisher
+    gscam2_launch_file = os.path.join(
+        FindPackageShare('gscam2').find('gscam2'),
+        'launch',
+        'node_param_launch.py'
+    )
+
+    gscam2_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(gscam2_launch_file)
+    )
+
     return LaunchDescription([
+        gscam2_launch,
         serial_port_arg,
         apriltag_size_arg,
         Node(
@@ -59,7 +75,7 @@ def generate_launch_description():
             executable='end_effector_pose_publisher',
             parameters=[{
                 "frame_id" : "alpha_base_link",
-                "frequency" : 20
+                "frequency" : 20,
                 }]
             ),
         Node(
