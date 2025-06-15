@@ -62,7 +62,7 @@ class AprilTagPosePublisher(Node):
         
     def ra_img_processing(self):
         # read in the next frame from the camera stream
-        ret, frame = cap.read()
+        ret, frame = self.cap.read()
         if not ret:
             self.ra_camera_timer.cancel()
             self.get_logger().error(f"Unable to continue reading RTSP stream from Reach Alpha camera")
@@ -74,7 +74,7 @@ class AprilTagPosePublisher(Node):
     def brov_img_callback(self, msg):
         # convert ROS Image message to OpenCV image
         try:
-            cv_frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except CvBridgeError as e:
             self.get_logger().error(f'CvBridge Error: {e}')
 
