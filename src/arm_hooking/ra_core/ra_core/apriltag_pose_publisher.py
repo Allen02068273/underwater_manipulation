@@ -79,7 +79,7 @@ class AprilTagPosePublisher(Node):
             self.get_logger().error(f'CvBridge Error: {e}')
 
         # detect AprilTags
-        self.process_frame(frame, 'reach_alpha_camera', self.brov_camera_calibration)
+        self.process_frame(frame, 'brov_camera', self.brov_camera_calibration)
 
     def process_frame(self, frame, tf_frame, camera_calibration):
         # estimate the image's timestamp
@@ -130,7 +130,7 @@ class AprilTagPosePublisher(Node):
         self.pose_publisher.publish(tfs)
 
 def __del__(self):
-    cap.release()
+    self.cap.release()
     cv2.destroyAllWindows()
 
 def main(args=None):

@@ -34,19 +34,19 @@ def generate_launch_description():
         '0.0715 if "', LaunchConfiguration('apriltag_size'), '" == "" else float("', LaunchConfiguration('apriltag_size'), '")'
     ])
 
-    # import the launch file for the BROV camera publisher
-    gscam2_launch_file = os.path.join(
-        FindPackageShare('gscam2').find('gscam2'),
-        'launch',
-        'node_param_launch.py'
-    )
+    # # import the launch file for the BROV camera publisher
+    # gscam2_launch_file = os.path.join(
+    #     FindPackageShare('gscam2').find('gscam2'),
+    #     'launch',
+    #     'node_param_launch.py'
+    # )
 
-    gscam2_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(gscam2_launch_file)
-    )
+    # gscam2_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(gscam2_launch_file)
+    # )
 
     return LaunchDescription([
-        gscam2_launch,
+        # gscam2_launch,
         serial_port_arg,
         apriltag_size_arg,
         Node(

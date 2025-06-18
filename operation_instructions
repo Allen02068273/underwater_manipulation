@@ -8,6 +8,8 @@ Open a terminal and run the following:
   cd ~/underwater_manipulation
   colcon build
   source ./install/local_setup.bash
+If gscan2 doesn't build and you don't need to access the BROV camera stream, build with this:
+  colcon build --packages-skip gscam2
 
 Open subsequent terminals with the following:
   source /opt/ros/humble/setup.bash
