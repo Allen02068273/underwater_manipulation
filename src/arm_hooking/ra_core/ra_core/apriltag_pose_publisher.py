@@ -19,7 +19,7 @@ class AprilTagPosePublisher(Node):
         self.declare_parameter('apriltag_size', 0.0745)  # meters
         self.declare_parameter('frequency', 30)  # Hz
         self.declare_parameter('display_feed', False)
-        self.declare_parameter('use_gstreamer', False)  # use GStreamer for low-latency RA camera feed
+        self.declare_parameter('use_gstreamer', True)  # use GStreamer for low-latency RA camera feed
         # note: enabling GStreamer will likely require building OpenCV from source with GStreamer enabled
 
         self.tag_size = float(self.get_parameter('apriltag_size').value)
@@ -49,8 +49,8 @@ class AprilTagPosePublisher(Node):
         # load camera calibration data
         with np.load("data/camera_calibrations/camera_calibration_nerve_ra.npz") as data:
             self.ra_camera_calibration = (data["camera_matrix"], data["dist_coeffs"])
-        with np.load("data/camera_calibrations/camera_calibration_brov.npz") as data:
-            self.brov_camera_calibration = (data["camera_matrix"], data["dist_coeffs"])
+        # with np.load("data/camera_calibrations/camera_calibration_brov.npz") as data:
+        #     self.brov_camera_calibration = (data["camera_matrix"], data["dist_coeffs"])
 
         # initialize the AprilTag detector
         self.detector = apriltag.Detector()

@@ -49,7 +49,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(included_launch_path),
         launch_arguments=[
             ('serial_port', LaunchConfiguration('serial_port')),
-            ('apriltag_size', LaunchConfiguration('apriltag_size'))
+            ('apriltag_size', LaunchConfiguration('apriltag_size')),
         ]
     )
 
@@ -63,7 +63,7 @@ def generate_launch_description():
             package='trajectory_generation',
             executable=generator_executable,
             parameters=[{
-                "trajectory_csv" : "data/trajectory.csv"
+                "trajectory_csv" : "data/trajectory.csv",
                 }]
             ),
         Node(
@@ -71,7 +71,8 @@ def generate_launch_description():
             executable='perform_skill',
             parameters=[{
                 "serial_port" : LaunchConfiguration('serial_port'),
-                "target_frame" : LaunchConfiguration('target_frame')
+                "target_frame" : LaunchConfiguration('target_frame'),
+                "record_debug" : True,
                 }]
             )
             

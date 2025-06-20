@@ -12,6 +12,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import control
 
+import csv
+
 class SkillPerformer(Node):
 
     def __init__(self):
@@ -23,6 +25,9 @@ class SkillPerformer(Node):
         # parameter for the speed with which to follow the trajectory in m/s
         self.declare_parameter('target_frame', 'target_2')
         self.target_name = self.get_parameter('target_frame').value
+        # parameter for the speed with which to follow the trajectory in m/s
+        self.declare_parameter('record_debug', True)
+        self.record_debug = self.get_parameter('record_debug').value
 
         # transform listener for target/base/tool transforms
         self._tf_buffer = Buffer()
@@ -63,6 +68,20 @@ class SkillPerformer(Node):
         Q = np.diag([1, 1, 1, 1.25, 1.25, 1.25])  # penalize position error less than velocity to better preserve trajectory shape
         R = np.eye(3) * 0.1                       # penalize large accelerations (inputs)
         self.K, S, E = control.lqr(self.A, self.B, Q, R)
+
+        # debugging CSV files
+        self.csv_files = {}
+        self.csv_writers = {}
+
+        if self.record_debug:
+            csv_filenames = ["smoothed", "generalized", "virtual_target", "robot_performance"]
+            for name in csv_filenames:
+                file_path = f"data/debug_trajectories/{name}.csv"
+                f = open(file_path, mode='w', newline='')
+                self.csv_files[name] = f
+                writer = csv.writer(f)
+                self.csv_writers[name] = writer
+                writer.writerow(['timestamp', 'x', 'y', 'z'])
         
     def try_get_tf(self, frame, child_frame):
         # try getting the transform of one frame (child_frame) in another (frame)
@@ -120,6 +139,10 @@ class SkillPerformer(Node):
         # start a timer to publish each trajectory step
         self.step_timer = self.create_timer(self.time_step, self.step_trajectory)
 
+        if self.record_debug:
+            for x in self.trajectory:
+                self.csv_writers["generalized"].writerow([0, x[0], x[1], x[2]])
+
     def step_trajectory(self):
         # try getting the transform of the target in the arm base frame
         # trans = self.transform or self.try_get_tf('reach_alpha_base', self.target_name)  # use this line to prevent continuous localization
@@ -139,9 +162,13 @@ class SkillPerformer(Node):
 
         #self.step_timer.cancel()
 
-        # add to tf tree for debugging
-        self.broadcast_debugging_tf(self.virtual_target, self.target_name, 'virtual_target')
-        # self.broadcast_debugging_tf(self.position, 'reach_alpha_base', 'LQR_adjusted_pose')
+        # broadcast/record debugging data
+        if self.trajectory_index < len(self.trajectory)-1:
+            self.broadcast_debugging_tf(self.virtual_target, self.target_name, 'virtual_target')
+            if self.record_debug:
+                self.csv_writers["virtual_target"].writerow([self.get_clock().now().to_msg().sec, self.virtual_target[0], self.virtual_target[1], self.virtual_target[2]])
+                self.csv_writers["robot_performance"].writerow([self.get_clock().now().to_msg().sec, self.position[0], self.position[1], self.position[2]])
+            # self.broadcast_debugging_tf(self.position, 'reach_alpha_base', 'LQR_adjusted_pose')
     
     def update_virtual_target(self):
         target = self.trajectory[self.trajectory_index]
@@ -266,6 +293,10 @@ class SkillPerformer(Node):
         tfs.transform.rotation.z = quat[2]
         tfs.transform.rotation.w = quat[3]
         self.tfb.sendTransform(tfs)
+
+    def __del__(self):
+        for file in self.csv_files:
+            file.close()
 
 def main(args=None):
     rclpy.init(args=args)
