@@ -165,16 +165,19 @@ class SkillPerformer(Node):
                 self.csv_writers["virtual_target"].writerow([self.get_clock().now().to_msg().sec, self.virtual_target[0], self.virtual_target[1], self.virtual_target[2]])
                 # self.csv_writers["lqr_output"].writerow([self.get_clock().now().to_msg().sec, self.position[0], self.position[1], self.position[2]])
 
-                tfs = self.try_get_tf(self.target_name, 'reach_alpha_base')
-                if tfs:
-                    pos = tfs.transform.translation
-                    self.csv_writers["lqr_output"].writerow([self.get_clock().now().to_msg().sec, pos.x, pos.y, pos.z])
-
-                tfs = self.try_get_tf(self.target_name, 'reach_alpha_tool')
-                if tfs:
+                tfs_target_base = self.try_get_tf(self.target_name, 'reach_alpha_base')
+                if tfs_target_base:
                     pose = Pose()
                     pose.position.x, pose.position.y, pose.position.z = self.position[:3]
-                    pos = do_transform_pose(pose, tfs).position
+                    pos = do_transform_pose(pose, tfs_target_base).position
+                    self.csv_writers["lqr_output"].writerow([self.get_clock().now().to_msg().sec, pos.x, pos.y, pos.z])
+
+                tfs_base_tool = self.try_get_tf('reach_alpha_base', 'reach_alpha_tool')
+                if tfs_base_tool and tfs_target_base:
+                    t = tfs_base_tool.transform.translation
+                    pose = Pose()
+                    pose.position.x, pose.position.y, pose.position.z = t.x, t.y, t.z
+                    pos = do_transform_pose(pose, tfs_target_base).position
                     self.csv_writers["robot_performance"].writerow([self.get_clock().now().to_msg().sec, pos.x, pos.y, pos.z])
 
             # self.broadcast_debugging_tf(self.position, 'reach_alpha_base', 'LQR_adjusted_pose')
