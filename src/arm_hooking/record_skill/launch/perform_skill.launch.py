@@ -64,6 +64,7 @@ def generate_launch_description():
             executable=generator_executable,
             parameters=[{
                 "trajectory_csv" : "data/trajectory.csv",
+                "record_debug" : True,
                 }]
             ),
         Node(

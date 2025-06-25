@@ -75,7 +75,7 @@ def generate_launch_description():
             executable='end_effector_pose_publisher',
             parameters=[{
                 "frame_id" : "alpha_base_link",
-                "frequency" : 20,
+                "frequency" : 50,
                 }]
             ),
         Node(

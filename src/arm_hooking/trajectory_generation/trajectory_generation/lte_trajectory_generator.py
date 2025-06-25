@@ -7,22 +7,42 @@ from geometry_msgs.msg import Point
 from std_msgs.msg import Float32MultiArray
 from trajectory_generation.utils.lte import LTE
 
+import csv
+
 class LTETrajectoryNode(Node):
     def __init__(self):
         super().__init__('lte_trajectory_generator')
         
-        # Declare and get CSV parameter
+        # parameters
         self.declare_parameter('trajectory_csv', 'data/trajectory.csv')
+        self.declare_parameter('record_debug', True)
         csv_file = self.get_parameter('trajectory_csv').value
+        self.record_debug = self.get_parameter('record_debug').value
+
+        # debugging CSV files
+        self.csv_files = {}
+        self.csv_writers = {}
+
+        if self.record_debug:
+            csv_filenames = ["raw", "smoothed", "generalized"]
+            for name in csv_filenames:
+                file_path = f"data/debug_trajectories/{name}.csv"
+                f = open(file_path, mode='w', newline='')
+                self.csv_files[name] = f
+                writer = csv.writer(f)
+                self.csv_writers[name] = writer
+                writer.writerow(['timestamp', 'x', 'y', 'z'])
         
-        # Load trajectory from CSV and smooth
+        # load trajectory from CSV and smooth
         self.traj = self.load_trajectory_from_csv(csv_file)
+        self.try_write_traj_to_csv('raw', self.traj)
         sample_count = 20
         self.traj = self.smooth_trajectory(self.traj, sample_count)
+        self.try_write_traj_to_csv('smoothed', self.traj)
         
         self.fixed_weight = 1e9
         
-        # Subscriber to XYZ initial positions
+        # subscriber to XYZ initial positions
         self.subscription = self.create_subscription(
             Point,
             'request_trajectory',
@@ -30,7 +50,7 @@ class LTETrajectoryNode(Node):
             10
         )
 
-        # Publisher for trajectory response
+        # publisher for trajectory response
         self.publisher = self.create_publisher(
             Float32MultiArray,
             'gen_trajectory',
@@ -97,7 +117,17 @@ class LTETrajectoryNode(Node):
         traj_msg = Float32MultiArray()
         traj_msg.data = new_traj.flatten().tolist()
         self.publisher.publish(traj_msg)
+        self.try_write_traj_to_csv('generalized', new_traj)
         self.get_logger().info("Published LTE trajectory.")
+
+    def try_write_traj_to_csv(self, csv_name, traj):
+        if self.record_debug:
+            for x in traj:
+                self.csv_writers[csv_name].writerow([0, x[0], x[1], x[2]])
+
+    def __del__(self):
+        for file in self.csv_files:
+            file.close()
 
 def main(args=None):
     rclpy.init(args=args)

@@ -17,7 +17,7 @@ class AprilTagPosePublisher(Node):
         super().__init__('apriltag_pose_publisher')
 
         self.declare_parameter('apriltag_size', 0.0745)  # meters
-        self.declare_parameter('frequency', 30)  # Hz
+        self.declare_parameter('frequency', 30)  # Hz, FPS
         self.declare_parameter('display_feed', False)
         self.declare_parameter('use_gstreamer', True)  # use GStreamer for low-latency RA camera feed
         # note: enabling GStreamer will likely require building OpenCV from source with GStreamer enabled

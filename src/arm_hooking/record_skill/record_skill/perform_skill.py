@@ -22,10 +22,10 @@ class SkillPerformer(Node):
         # parameter for the speed with which to follow the trajectory in m/s
         self.declare_parameter('speed', 0.05)
         self.speed = float(self.get_parameter('speed').value)
-        # parameter for the speed with which to follow the trajectory in m/s
+        # parameter for the tf2 frame of the target
         self.declare_parameter('target_frame', 'target_2')
         self.target_name = self.get_parameter('target_frame').value
-        # parameter for the speed with which to follow the trajectory in m/s
+        # parameter for whether to record the debug data
         self.declare_parameter('record_debug', True)
         self.record_debug = self.get_parameter('record_debug').value
 
@@ -74,7 +74,7 @@ class SkillPerformer(Node):
         self.csv_writers = {}
 
         if self.record_debug:
-            csv_filenames = ["smoothed", "generalized", "virtual_target", "robot_performance"]
+            csv_filenames = ["virtual_target", "lqr_output", "robot_performance"]
             for name in csv_filenames:
                 file_path = f"data/debug_trajectories/{name}.csv"
                 f = open(file_path, mode='w', newline='')
@@ -139,10 +139,6 @@ class SkillPerformer(Node):
         # start a timer to publish each trajectory step
         self.step_timer = self.create_timer(self.time_step, self.step_trajectory)
 
-        if self.record_debug:
-            for x in self.trajectory:
-                self.csv_writers["generalized"].writerow([0, x[0], x[1], x[2]])
-
     def step_trajectory(self):
         # try getting the transform of the target in the arm base frame
         # trans = self.transform or self.try_get_tf('reach_alpha_base', self.target_name)  # use this line to prevent continuous localization
@@ -167,7 +163,20 @@ class SkillPerformer(Node):
             self.broadcast_debugging_tf(self.virtual_target, self.target_name, 'virtual_target')
             if self.record_debug:
                 self.csv_writers["virtual_target"].writerow([self.get_clock().now().to_msg().sec, self.virtual_target[0], self.virtual_target[1], self.virtual_target[2]])
-                self.csv_writers["robot_performance"].writerow([self.get_clock().now().to_msg().sec, self.position[0], self.position[1], self.position[2]])
+                # self.csv_writers["lqr_output"].writerow([self.get_clock().now().to_msg().sec, self.position[0], self.position[1], self.position[2]])
+
+                tfs = self.try_get_tf(self.target_name, 'reach_alpha_base')
+                if tfs:
+                    pos = tfs.transform.translation
+                    self.csv_writers["lqr_output"].writerow([self.get_clock().now().to_msg().sec, pos.x, pos.y, pos.z])
+
+                tfs = self.try_get_tf(self.target_name, 'reach_alpha_tool')
+                if tfs:
+                    pose = Pose()
+                    pose.position.x, pose.position.y, pose.position.z = self.position[:3]
+                    pos = do_transform_pose(pose, tfs).position
+                    self.csv_writers["robot_performance"].writerow([self.get_clock().now().to_msg().sec, pos.x, pos.y, pos.z])
+
             # self.broadcast_debugging_tf(self.position, 'reach_alpha_base', 'LQR_adjusted_pose')
     
     def update_virtual_target(self):
