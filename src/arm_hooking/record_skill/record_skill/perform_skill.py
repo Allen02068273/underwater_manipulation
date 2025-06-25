@@ -20,7 +20,7 @@ class SkillPerformer(Node):
         super().__init__('skill_performer')
 
         # parameter for the speed with which to follow the trajectory in m/s
-        self.declare_parameter('speed', 0.05)
+        self.declare_parameter('speed', 0.025)
         self.speed = float(self.get_parameter('speed').value)
         # parameter for the tf2 frame of the target
         self.declare_parameter('target_frame', 'target_2')
