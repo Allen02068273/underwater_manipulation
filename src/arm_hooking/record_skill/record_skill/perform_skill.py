@@ -141,8 +141,8 @@ class SkillPerformer(Node):
 
     def step_trajectory(self):
         # try getting the transform of the target in the arm base frame
-        # trans = self.transform or self.try_get_tf('reach_alpha_base', self.target_name)  # use this line to prevent continuous localization
-        trans = self.try_get_tf('reach_alpha_base', self.target_name)  # use this line for continuous localization
+        trans = self.transform or self.try_get_tf('reach_alpha_base', self.target_name)  # use this line to prevent continuous localization
+        # trans = self.try_get_tf('reach_alpha_base', self.target_name)  # use this line for continuous localization
         self.transform = trans
         if trans is None:
             return
