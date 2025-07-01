@@ -88,19 +88,39 @@ class LTETrajectoryNode(Node):
         y = traj[:, 1]
         z = traj[:, 2]
 
-        # Create a parameter t to represent the progression along the trajectory
-        t = np.linspace(0, 1, len(traj))
+        # # Create a parameter t to represent the progression along the trajectory
+        # t = np.linspace(0, 1, len(traj))
 
-        # Fit a B-spline to each component
-        tck_x = interpolate.splrep(t, x, s=0)
-        tck_y = interpolate.splrep(t, y, s=0)
-        tck_z = interpolate.splrep(t, z, s=0)
+        # # Fit a B-spline to each component
+        # tck_x = interpolate.splrep(t, x, s=0)
+        # tck_y = interpolate.splrep(t, y, s=0)
+        # tck_z = interpolate.splrep(t, z, s=0)
 
-        # Resample the trajectory with the new number of points
-        t_new = np.linspace(0, 1, sample_count)
-        x_smooth = interpolate.splev(t_new, tck_x)
-        y_smooth = interpolate.splev(t_new, tck_y)
-        z_smooth = interpolate.splev(t_new, tck_z)
+        # # Resample the trajectory with the new number of points
+        # t_new = np.linspace(0, 1, sample_count)
+        # x_smooth = interpolate.splev(t_new, tck_x)
+        # y_smooth = interpolate.splev(t_new, tck_y)
+        # z_smooth = interpolate.splev(t_new, tck_z)
+
+        # Compute distances between consecutive points
+        dx = np.diff(x)
+        dy = np.diff(y)
+        dz = np.diff(z)
+        distances = np.sqrt(dx**2 + dy**2 + dz**2)
+        arc_length = np.concatenate(([0], np.cumsum(distances)))
+
+        from scipy.interpolate import CubicSpline
+
+        # Fit splines
+        spline_x = CubicSpline(arc_length, x)
+        spline_y = CubicSpline(arc_length, y)
+        spline_z = CubicSpline(arc_length, z)
+
+        # Generate equally spaced arc lengths
+        s_new = np.linspace(0, arc_length[-1], sample_count)
+        x_smooth = spline_x(s_new)
+        y_smooth = spline_y(s_new)
+        z_smooth = spline_z(s_new)
 
         # Combine the smoothed components
         smoothed_traj = np.vstack((x_smooth, y_smooth, z_smooth)).T
