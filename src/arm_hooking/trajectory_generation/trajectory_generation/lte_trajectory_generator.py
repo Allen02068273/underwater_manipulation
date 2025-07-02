@@ -32,15 +32,17 @@ class LTETrajectoryNode(Node):
                 writer = csv.writer(f)
                 self.csv_writers[name] = writer
                 writer.writerow(['timestamp', 'x', 'y', 'z'])
+        self.logged_generalized = False
         
-        # load trajectory from CSV and smooth
+        # load trajectory from CSV
         self.traj = self.load_trajectory_from_csv(csv_file)
-        self.try_write_traj_to_csv('raw', self.traj)
+        self.write_traj_to_csv('raw', self.traj)
+
+        # smooth trajectory
         sample_count = 20
-        self.traj = self.smooth_trajectory(self.traj, sample_count)
-        self.try_write_traj_to_csv('smoothed', self.traj)
-        
-        self.fixed_weight = 1e9
+        smoothing = 0.0002  # 0.0 for interpolation, higher numbers for more smoothing
+        self.traj = self.smooth_trajectory(self.traj, sample_count, smoothing)
+        self.write_traj_to_csv('smoothed', self.traj)
         
         # subscriber to XYZ initial positions
         self.subscription = self.create_subscription(
@@ -77,7 +79,7 @@ class LTETrajectoryNode(Node):
             rclpy.shutdown()
             return None
 
-    def smooth_trajectory(self, traj, sample_count):
+    def smooth_trajectory(self, traj, sample_count, smoothing):
         # Ensure trajectory has at least 2 points
         if traj.shape[0] < 2:
             self.get_logger().info("Trajectory must have at least 2 points for smoothing.")
@@ -88,20 +90,6 @@ class LTETrajectoryNode(Node):
         y = traj[:, 1]
         z = traj[:, 2]
 
-        # # Create a parameter t to represent the progression along the trajectory
-        # t = np.linspace(0, 1, len(traj))
-
-        # # Fit a B-spline to each component
-        # tck_x = interpolate.splrep(t, x, s=0)
-        # tck_y = interpolate.splrep(t, y, s=0)
-        # tck_z = interpolate.splrep(t, z, s=0)
-
-        # # Resample the trajectory with the new number of points
-        # t_new = np.linspace(0, 1, sample_count)
-        # x_smooth = interpolate.splev(t_new, tck_x)
-        # y_smooth = interpolate.splev(t_new, tck_y)
-        # z_smooth = interpolate.splev(t_new, tck_z)
-
         # Compute distances between consecutive points
         dx = np.diff(x)
         dy = np.diff(y)
@@ -109,18 +97,16 @@ class LTETrajectoryNode(Node):
         distances = np.sqrt(dx**2 + dy**2 + dz**2)
         arc_length = np.concatenate(([0], np.cumsum(distances)))
 
-        from scipy.interpolate import CubicSpline
+        # Fit a B-spline to each component
+        tck_x = interpolate.splrep(arc_length, x, s=smoothing)
+        tck_y = interpolate.splrep(arc_length, y, s=smoothing)
+        tck_z = interpolate.splrep(arc_length, z, s=smoothing)
 
-        # Fit splines
-        spline_x = CubicSpline(arc_length, x)
-        spline_y = CubicSpline(arc_length, y)
-        spline_z = CubicSpline(arc_length, z)
-
-        # Generate equally spaced arc lengths
+        # Resample the trajectory with the new number of points
         s_new = np.linspace(0, arc_length[-1], sample_count)
-        x_smooth = spline_x(s_new)
-        y_smooth = spline_y(s_new)
-        z_smooth = spline_z(s_new)
+        x_smooth = interpolate.splev(s_new, tck_x)
+        y_smooth = interpolate.splev(s_new, tck_y)
+        z_smooth = interpolate.splev(s_new, tck_z)
 
         # Combine the smoothed components
         smoothed_traj = np.vstack((x_smooth, y_smooth, z_smooth)).T
@@ -137,16 +123,18 @@ class LTETrajectoryNode(Node):
         traj_msg = Float32MultiArray()
         traj_msg.data = new_traj.flatten().tolist()
         self.publisher.publish(traj_msg)
-        self.try_write_traj_to_csv('generalized', new_traj)
+        if not self.logged_generalized:
+            self.write_traj_to_csv('generalized', new_traj)
+            self.logged_generalized = True
         self.get_logger().info("Published LTE trajectory.")
 
-    def try_write_traj_to_csv(self, csv_name, traj):
+    def write_traj_to_csv(self, csv_name, traj):
         if self.record_debug:
             for x in traj:
                 self.csv_writers[csv_name].writerow([0, x[0], x[1], x[2]])
 
     def __del__(self):
-        for file in self.csv_files:
+        for file in self.csv_files.values():
             file.close()
 
 def main(args=None):
