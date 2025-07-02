@@ -297,7 +297,7 @@ class SkillPerformer(Node):
         pose_stamped.pose.position.y = y
         pose_stamped.pose.position.z = z
         self.pose_publisher.publish(pose_stamped)
-        self.get_logger().info(f"Published trajectory step {self.trajectory_index + 1} at xyz {pose_stamped.pose.position.x} {pose_stamped.pose.position.y} {pose_stamped.pose.position.z}.")
+        # self.get_logger().info(f"Published trajectory step {self.trajectory_index + 1} at xyz {pose_stamped.pose.position.x} {pose_stamped.pose.position.y} {pose_stamped.pose.position.z}.")
 
         # set gripper joint positions
         gripper_position = [4.0, 2.10] if gripper_open else [2.0, 2.10]
