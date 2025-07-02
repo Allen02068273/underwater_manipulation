@@ -14,6 +14,14 @@ import control
 
 import csv
 
+from enum import Enum
+
+class ArmState(Enum):
+    READY = 0
+    FOLLOW_TRAJECTORY = 1
+    WAIT_AFTER_TRAJECTORY = 2
+    RETURN_TO_READY = 3
+
 class SkillPerformer(Node):
 
     def __init__(self):
@@ -48,6 +56,8 @@ class SkillPerformer(Node):
         self.transform = None
 
         # trajectory following
+        self.state = ArmState.READY
+        self.state_end_time = None
         self.trajectory = None
         self.trajectory_index = None
         self.position = None  # position sent to robot in robot base frame
@@ -119,7 +129,7 @@ class SkillPerformer(Node):
 
     def trajectory_callback(self, msg):
         # ensure only one trajectory is processed
-        if self.trajectory is not None:
+        if self.trajectory is not None or not self.state == ArmState.READY:
             return
         
         self.get_logger().info("Received trajectory from generator.")
@@ -138,6 +148,7 @@ class SkillPerformer(Node):
         
         # start a timer to publish each trajectory step
         self.step_timer = self.create_timer(self.time_step, self.step_trajectory)
+        self.state = ArmState.FOLLOW_TRAJECTORY
 
     def step_trajectory(self):
         # try getting the transform of the target in the arm base frame
@@ -147,20 +158,36 @@ class SkillPerformer(Node):
         if trans is None:
             return
         
-        self.update_virtual_target()
+        traj_done = self.update_virtual_target()
 
         self.apply_lqr(trans)
 
-        if self.trajectory_index < len(self.trajectory)-1:
-            self.publish_pose(self.position[0], self.position[1], self.position[2], gripper_open=False)
-        else:
-            self.publish_pose(0.000, 0.120, 0.150, gripper_open=True)
+        # state transitions
+        if self.state == ArmState.FOLLOW_TRAJECTORY and traj_done:
+            self.state = ArmState.WAIT_AFTER_TRAJECTORY
+            wait_seconds = 1
+            self.state_end_time = self.get_clock().now().nanoseconds * 1e-9 + wait_seconds
+        elif self.state == ArmState.WAIT_AFTER_TRAJECTORY and self.get_clock().now().nanoseconds * 1e-9 > self.state_end_time:
+            self.state = ArmState.RETURN_TO_READY
+            wait_seconds = 3
+            self.state_end_time = self.get_clock().now().nanoseconds * 1e-9 + wait_seconds
+        elif self.state == ArmState.RETURN_TO_READY and self.get_clock().now().nanoseconds * 1e-9 > self.state_end_time:
+            self.state = ArmState.READY
 
-        #self.step_timer.cancel()
+        # state actions
+        if self.state == ArmState.FOLLOW_TRAJECTORY:
+            self.publish_pose(self.position[0], self.position[1], self.position[2], gripper_open=False)
+        elif self.state == ArmState.WAIT_AFTER_TRAJECTORY:
+            self.publish_pose(self.position[0], self.position[1], self.position[2], gripper_open=True)
+        elif self.state == ArmState.RETURN_TO_READY:
+            self.publish_pose(0.000, 0.120, 0.150, gripper_open=False)
+        elif self.state == ArmState.READY:
+            self.step_timer.cancel()
 
         # broadcast/record debugging data
-        if self.trajectory_index < len(self.trajectory)-1:
+        if self.state == ArmState.FOLLOW_TRAJECTORY:
             self.broadcast_debugging_tf(self.virtual_target, self.target_name, 'virtual_target')
+            # self.broadcast_debugging_tf(self.position, 'reach_alpha_base', 'LQR_adjusted_pose')
             if self.record_debug:
                 self.csv_writers["virtual_target"].writerow([self.get_clock().now().to_msg().sec, self.virtual_target[0], self.virtual_target[1], self.virtual_target[2]])
                 # self.csv_writers["lqr_output"].writerow([self.get_clock().now().to_msg().sec, self.position[0], self.position[1], self.position[2]])
@@ -179,8 +206,6 @@ class SkillPerformer(Node):
                     pose.position.x, pose.position.y, pose.position.z = t.x, t.y, t.z
                     pos = do_transform_pose(pose, tfs_target_base).position
                     self.csv_writers["robot_performance"].writerow([self.get_clock().now().to_msg().sec, pos.x, pos.y, pos.z])
-
-            # self.broadcast_debugging_tf(self.position, 'reach_alpha_base', 'LQR_adjusted_pose')
     
     def update_virtual_target(self):
         target = self.trajectory[self.trajectory_index]

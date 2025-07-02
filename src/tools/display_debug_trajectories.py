@@ -20,8 +20,9 @@ def plot_xyz_overlay(label, csv_filename, color=None, linestyle='-', plot_title=
     Parameters:
         plot_title (str): Label for the dataset.
         csv_filename (str): CSV file with 'x', 'y', 'z' columns.
-        label (str): Optional title of the figure (only used at first call).
         color (str): Optional color (e.g., 'r', 'g', 'b', etc.)
+        linestyle (str): Optional line style (e.g., '-', '--', ':', etc.)
+        plot_title (str): Optional title of the figure (only used at first call).
     """
     global _plot
 
@@ -90,9 +91,9 @@ def plot_xyz_overlay(label, csv_filename, color=None, linestyle='-', plot_title=
     plt.draw()  # redraw the updated plot without blocking
 
 
-plot_xyz_overlay("Recorded", "data/debug_trajectories/raw.csv", plot_title="Trajectories")
+plot_xyz_overlay("Raw Demonstration", "data/debug_trajectories/raw.csv", linestyle=':', plot_title="Trajectories",)
 # plot_xyz_overlay("Recorded 2", "data/debug_trajectories/trajectory.csv", plot_title="Trajectories")
-plot_xyz_overlay("Smoothed", "data/debug_trajectories/smoothed.csv", linestyle='--')
+plot_xyz_overlay("Smoothed", "data/debug_trajectories/smoothed.csv")
 plot_xyz_overlay("Generalized", "data/debug_trajectories/generalized.csv")
 plot_xyz_overlay("Virtual Target", "data/debug_trajectories/virtual_target.csv", linestyle='--')
 plot_xyz_overlay("LQR Output", "data/debug_trajectories/lqr_output.csv")
