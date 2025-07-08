@@ -90,23 +90,30 @@ class LTETrajectoryNode(Node):
         y = traj[:, 1]
         z = traj[:, 2]
 
-        # Compute distances between consecutive points
-        dx = np.diff(x)
-        dy = np.diff(y)
-        dz = np.diff(z)
-        distances = np.sqrt(dx**2 + dy**2 + dz**2)
-        arc_length = np.concatenate(([0], np.cumsum(distances)))
+        # # Compute distances between consecutive points
+        # dx = np.diff(x)
+        # dy = np.diff(y)
+        # dz = np.diff(z)
+        # distances = np.sqrt(dx**2 + dy**2 + dz**2)
+        # arc_length = np.concatenate(([0], np.cumsum(distances)))
 
-        # Fit a B-spline to each component
-        tck_x = interpolate.splrep(arc_length, x, s=smoothing)
-        tck_y = interpolate.splrep(arc_length, y, s=smoothing)
-        tck_z = interpolate.splrep(arc_length, z, s=smoothing)
+        # # Fit a B-spline to each component
+        # tck_x = interpolate.splrep(arc_length, x, s=smoothing)
+        # tck_y = interpolate.splrep(arc_length, y, s=smoothing)
+        # tck_z = interpolate.splrep(arc_length, z, s=smoothing)
 
-        # Resample the trajectory with the new number of points
-        s_new = np.linspace(0, arc_length[-1], sample_count)
-        x_smooth = interpolate.splev(s_new, tck_x)
-        y_smooth = interpolate.splev(s_new, tck_y)
-        z_smooth = interpolate.splev(s_new, tck_z)
+        # # Resample the trajectory with the new number of points
+        # s_new = np.linspace(0, arc_length[-1], sample_count)
+        # x_smooth = interpolate.splev(s_new, tck_x)
+        # y_smooth = interpolate.splev(s_new, tck_y)
+        # z_smooth = interpolate.splev(s_new, tck_z)
+
+        px = interpolate.interp1d(np.linspace(0, 1, len(x)), x)
+        x_smooth = px(np.linspace(0, 1, sample_count))
+        py = interpolate.interp1d(np.linspace(0, 1, len(y)), y)
+        y_smooth = py(np.linspace(0, 1, sample_count))
+        pz = interpolate.interp1d(np.linspace(0, 1, len(z)), z)
+        z_smooth = pz(np.linspace(0, 1, sample_count))
 
         # Combine the smoothed components
         smoothed_traj = np.vstack((x_smooth, y_smooth, z_smooth)).T
@@ -117,7 +124,12 @@ class LTETrajectoryNode(Node):
         # generate LTE trajectory starting from input point
         start_point = np.array([msg.x, msg.y, msg.z])
         end_point = np.array([self.traj[-1, 0], self.traj[-1, 1], self.traj[-1, 2]])
-        new_traj = LTE(self.traj, [start_point, end_point], [0, len(self.traj) - 1])
+
+        # this constraint point should be directly over the hook; without it, the arm may not reach far enough on reproductions
+        mid_index = int(.65 * len(self.traj))
+        mid_point = np.array([self.traj[mid_index, 0], self.traj[mid_index, 1], self.traj[mid_index, 2]])
+
+        new_traj = LTE(self.traj, [start_point, mid_point, end_point], [0, mid_index, len(self.traj) - 1])
 
         # publish the generated trajectory
         traj_msg = Float32MultiArray()

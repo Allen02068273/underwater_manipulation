@@ -12,7 +12,7 @@ _plot = {
     },
 }
 
-def plot_xyz_overlay(label, csv_filename, color=None, linestyle='-', plot_title=None):
+def plot_xyz_overlay(label, csv_filename, color=None, linestyle='-', marker=None, plot_title=None):
     """
     Adds xyz plots from a CSV file to existing shared subplots.
     Normalizes the time axis so all plots fill the same horizontal range.
@@ -78,9 +78,9 @@ def plot_xyz_overlay(label, csv_filename, color=None, linestyle='-', plot_title=
         axes[i].set_ylim(plt_min, plt_max)
 
     # plot on each subplot
-    axes[0].plot(time, x, label=label, color=color, linestyle=linestyle)
-    axes[1].plot(time, y, label=label, color=color, linestyle=linestyle)
-    axes[2].plot(time, z, label=label, color=color, linestyle=linestyle)
+    axes[0].plot(time, x, label=label, color=color, linestyle=linestyle, marker=marker)
+    axes[1].plot(time, y, label=label, color=color, linestyle=linestyle, marker=marker)
+    axes[2].plot(time, z, label=label, color=color, linestyle=linestyle, marker=marker)
 
     # add legends if labels provided
     if label:
@@ -91,11 +91,11 @@ def plot_xyz_overlay(label, csv_filename, color=None, linestyle='-', plot_title=
     plt.draw()  # redraw the updated plot without blocking
 
 
-plot_xyz_overlay("Raw Demonstration", "data/debug_trajectories/raw.csv", linestyle=':', plot_title="Trajectories",)
+plot_xyz_overlay("Raw Demonstration", "data/debug_trajectories/raw.csv", linestyle=':', plot_title="Trajectories")
 # plot_xyz_overlay("Recorded 2", "data/debug_trajectories/trajectory.csv", plot_title="Trajectories")
 plot_xyz_overlay("Smoothed", "data/debug_trajectories/smoothed.csv")
 plot_xyz_overlay("Generalized", "data/debug_trajectories/generalized.csv")
-plot_xyz_overlay("Virtual Target", "data/debug_trajectories/virtual_target.csv", linestyle='--')
+plot_xyz_overlay("LQR Target", "data/debug_trajectories/lqr_target.csv", linestyle='--')
 plot_xyz_overlay("LQR Output", "data/debug_trajectories/lqr_output.csv")
 plot_xyz_overlay("Robot Performance", "data/debug_trajectories/robot_performance.csv")
 

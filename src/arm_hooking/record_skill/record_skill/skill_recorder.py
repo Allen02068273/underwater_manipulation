@@ -6,18 +6,31 @@ from tf2_ros import LookupException, ConnectivityException
 from geometry_msgs.msg import Pose
 from tf2_geometry_msgs import do_transform_pose
 import csv
+from pynput import keyboard
+
+'''
+Keyboard Controls
+ l - localize
+ o - start recording
+ p - stop recording
+'''
 
 class SkillRecorder(Node):
 
     def __init__(self):
         super().__init__('skill_recorder')
-
-        self.localize_continuously = True  # True: more accurate but noisier; False: more precise but less accurate
         
         # transform listener for target/base/tool transforms
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, self)
         self.trans_base_to_target = None
+        self.localize_continuously = True
+        self.target_frame = 'target_2'
+
+        # start listening to keyboard input
+        self.listener = keyboard.Listener(on_press=self.on_key_press)
+        self.listener.start()
+        self.should_exit = False
 
         # set up CSV file
         csv_filename = "data/trajectory.csv"
@@ -35,15 +48,43 @@ class SkillRecorder(Node):
         hz = 10  # entries added per second
         self.get_logger().info(f"Waiting for transform...")
         self.recorder_timer = self.create_timer(1/hz, self.recorder)
+        self.recording = False
+
+    def on_key_press(self, key):
+        try:
+            if key.char == 'l':  # initialize localization
+                try:
+                    self.trans_base_to_target = self._tf_buffer.lookup_transform(self.target_frame, 'reach_alpha_base', rclpy.time.Time())
+                    self.localize_continuously = False
+                    self.get_logger().info(f"Successfully Localized")
+                except (LookupException, ConnectivityException) as e:
+                    self.get_logger().info(f"Localization Failed: {e}")
+            elif key.char == 'o':  # start recording
+                self.recording = True
+                self.get_logger().info(f"Recording Started")
+            elif key.char == 'p':  # stop recording and shut down node
+                self.recording = False
+                self.get_logger().info(f"Recording Stopped: shutting down node")
+                self.listener.stop()
+                self.file.close()
+                self.file_debug.close()
+                self.should_exit = True
+        except AttributeError:
+            pass  # handle special keys if necessary
 
     def recorder(self):
+        if not self.recording:
+            return
+        
+        self.get_logger().info(f"Recording")
+
         # get current timestamp
         timestamp = self.get_clock().now().to_msg().sec
 
-        # try getting the transform of the tool in the target frame
+        # try getting the necessary transforms
         try:
             if self.trans_base_to_target is None or self.localize_continuously:
-                self.trans_base_to_target = self._tf_buffer.lookup_transform('target_2', 'reach_alpha_base', rclpy.time.Time())
+                self.trans_base_to_target = self._tf_buffer.lookup_transform(self.target_frame, 'reach_alpha_base', rclpy.time.Time())
             tf_tool_in_base = self._tf_buffer.lookup_transform('reach_alpha_base', 'reach_alpha_tool', rclpy.time.Time())
         except (LookupException, ConnectivityException) as e:
             return
@@ -62,10 +103,12 @@ class SkillRecorder(Node):
             p.position.z
         ])
 
+        self.get_logger().info(f"Data Written")
+
         # try getting robot frame transforms for debugging
         try:
             tf_tool_in_base = self._tf_buffer.lookup_transform('reach_alpha_base', 'reach_alpha_tool', rclpy.time.Time())
-            tf_target_in_base = self._tf_buffer.lookup_transform('reach_alpha_base', 'target_2', rclpy.time.Time())
+            tf_target_in_base = self._tf_buffer.lookup_transform('reach_alpha_base', self.target_frame, rclpy.time.Time())
         except (LookupException, ConnectivityException) as e:
             self.get_logger().info(f"Waiting for transform {repr(e)}.")
             return
@@ -83,16 +126,19 @@ class SkillRecorder(Node):
 
     def __del__(self):
         self.file.close()
+        self.file_debug.close()
 
 def main(args=None):
     rclpy.init(args=args)
     node = SkillRecorder()
     try:
-        rclpy.spin(node)
+        while rclpy.ok() and not node.should_exit:
+            rclpy.spin_once(node, timeout_sec=0.1)
     except KeyboardInterrupt:
         pass
-    node.destroy_node()
-    rclpy.shutdown()
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

@@ -37,7 +37,7 @@ class GamepadKeyboardControl(Node):
         self.velocity = Twist()
 
         # time step (publishing rate, used in physics)
-        self.time_step = 0.1 # seconds
+        self.time_step = 0.1  # seconds
 
         # start listening to keyboard input
         self.listener = keyboard.Listener(on_press=self.on_key_press)
@@ -68,15 +68,15 @@ class GamepadKeyboardControl(Node):
     def on_key_press(self, key):
         # Handle keypress for velocity control
         try:
-            if key.char == 'r': # reset pose
+            if key.char == 'r':  # reset pose
                 self.pose_initialized = False
-            elif key.char == 'f': # toggle gripper open/closed
+            elif key.char == 'f':  # toggle gripper open/closed
                 self.gripper_open = not self.gripper_open
-            elif key.char == 'g': # move to ready position
+            elif key.char == 'g':  # move to ready position
                 self.pose_stamped.pose.position.x = 0.000
                 self.pose_stamped.pose.position.y = -0.024
                 self.pose_stamped.pose.position.z = 0.179
-            else: # move end effector
+            else:  # move end effector
                 acceleration = 0.02
 
                 # vertical motion
@@ -95,10 +95,10 @@ class GamepadKeyboardControl(Node):
                 
                 # self.get_logger().info(f"Velocity: {self.velocity.linear}")
         except AttributeError:
-            pass  # Handle special keys if necessary
+            pass  # handle special keys if necessary
 
     def handle_gamepad_input(self):
-        pygame.event.pump()  # Process events
+        pygame.event.pump()  # process events
 
         acceleration = 0.005
         input_right = self.joystick.get_axis(0)  # left stick vertical
@@ -162,7 +162,7 @@ class GamepadKeyboardControl(Node):
         self.pose_stamped.pose.position.y += self.velocity.linear.y * self.time_step
         self.pose_stamped.pose.position.z += self.velocity.linear.z * self.time_step
 
-        if self.pose_stamped.pose.position.y > 0.185: # arm will turn upside down if y goes beyond this value
+        if self.pose_stamped.pose.position.y > 0.185:  # arm will turn upside down if y goes beyond this value
             self.pose_stamped.pose.position.y = 0.185
 
         # dampen velocity

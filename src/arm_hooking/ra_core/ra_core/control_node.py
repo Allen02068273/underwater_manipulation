@@ -12,7 +12,7 @@ import math
 
 from scipy.spatial.transform import Rotation as R
 
-class BPLControlNode(Node):
+class ControlNode(Node):
     def __init__(self):
         super().__init__("bpl_control_node")
 
@@ -86,13 +86,6 @@ class BPLControlNode(Node):
                     p.data = list(encode_floats([velocity]))
                     self.tx_publisher.publish(p)
 
-        if self.km_command is not None:
-            p = Packet()
-            p.packet_id = PacketID.INVERSE_KINEMATICS_GLOBAL_POSITION
-            p.device_id = 0x0E
-            p.data = list(encode_floats(self.km_command))
-            self.tx_publisher.publish(p)
-
         if self.ee_velocity_command is not None:
             p = Packet()
             p.packet_id = PacketID.INVERSE_KINEMATICS_GLOBAL_VELOCITY
@@ -100,11 +93,24 @@ class BPLControlNode(Node):
             p.data = list(encode_floats(self.ee_velocity_command))
             self.tx_publisher.publish(p)
 
+        if self.km_command is not None:
+            p = Packet()
+            p.packet_id = PacketID.INVERSE_KINEMATICS_GLOBAL_POSITION
+            p.device_id = 0x0E
+            p.data = list(encode_floats(self.km_command))
+            self.tx_publisher.publish(p)
+
 
 def main(args=None):
     rclpy.init(args=args)
-    bcn = BPLControlNode()
-    rclpy.spin(bcn)
+    node = ControlNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

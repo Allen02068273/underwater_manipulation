@@ -58,7 +58,7 @@ class TargetTransforms(Node):
         self.add_static_tfs('reach_alpha_end_effector', 'reach_alpha_tool', position=(0.140, 0, 0))  # tool offset from end effector - this is the point that is recorded in trajectories
         #self.add_static_tfs('apriltag', 'target', position=(-0.05, 0, -self.tag_size/2 - 0.015))  # target offset from AprilTag - trajectories are recorded in the target frame
         for i in tag_ids:  # multiple AprilTags
-            self.add_static_tfs(f'apriltag_{i}', f'target_{i}', position=(-0.08, 0, -self.tag_size/2 - 0.017))
+            self.add_static_tfs(f'apriltag_{i}', f'target_{i}', position=(-0.08, 0, -self.tag_size/2 - 0.025))
         # for i in tag_ids:  # (optional) connect AprilTags
         #     self.add_static_tfs(f'apriltag_{i}', f'apriltag_{i+1}', position=(0, -0.087, 0))
         #     self.add_static_tfs(f'apriltag_{i+1}', f'apriltag_{i}', position=(0, 0.087, 0))
