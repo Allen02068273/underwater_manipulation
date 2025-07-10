@@ -189,8 +189,10 @@ class SkillPerformer(Node):
         # state actions
         if self.fsm_state == ArmState.FOLLOW_TRAJECTORY:
             self.publish_state(self.state, gripper_open=False)
+            # self.publish_state(self.lqr_target, gripper_open=False)
         elif self.fsm_state == ArmState.WAIT_AFTER_TRAJECTORY:
             self.publish_state(self.state, gripper_open=True)
+            # self.publish_state(self.lqr_target, gripper_open=True)
         elif self.fsm_state == ArmState.RETURN_TO_READY:
             self.publish_state((0.000, 0.120, 0.150, 0.0,0.0,0.0), gripper_open=False)
         elif self.fsm_state == ArmState.READY:
