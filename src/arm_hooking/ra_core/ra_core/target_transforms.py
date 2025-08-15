@@ -111,7 +111,7 @@ class TargetTransforms(Node):
         # remove roll component (the camera is not affected by end effector roll)
         q = msg.pose.orientation
         roll, pitch, yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')
-        roll = 0.0
+        roll = 0.0#3.14159
         q.x, q.y, q.z, q.w = R.from_euler('xyz', [roll, pitch, yaw]).as_quat()
         msg.pose.orientation = q
         

@@ -5,7 +5,7 @@ import pandas as pd
 from scipy import interpolate
 from geometry_msgs.msg import Point
 from std_msgs.msg import Float32MultiArray
-from trajectory_generation.utils.lte import LTE
+from trajectory_generation.utils import LTE, JA, DMP
 
 import csv
 
@@ -15,8 +15,10 @@ class LTETrajectoryNode(Node):
         
         # parameters
         self.declare_parameter('trajectory_csv', 'data/trajectory.csv')
+        self.declare_parameter('model', 'LTE')  # 'LTE', 'DMP', or 'JA'
         self.declare_parameter('record_debug', True)
         csv_file = self.get_parameter('trajectory_csv').value
+        self.model = self.get_parameter('model').value
         self.record_debug = self.get_parameter('record_debug').value
 
         # debugging CSV files
@@ -40,8 +42,7 @@ class LTETrajectoryNode(Node):
 
         # smooth trajectory
         sample_count = 20
-        smoothing = 0.0002  # 0.0 for interpolation, higher numbers for more smoothing
-        self.traj = self.smooth_trajectory(self.traj, sample_count, smoothing)
+        self.traj = self.smooth_trajectory(self.traj, sample_count)
         self.write_traj_to_csv('smoothed', self.traj)
         
         # subscriber to XYZ initial positions
@@ -79,7 +80,7 @@ class LTETrajectoryNode(Node):
             rclpy.shutdown()
             return None
 
-    def smooth_trajectory(self, traj, sample_count, smoothing):
+    def smooth_trajectory(self, traj, sample_count):
         # Ensure trajectory has at least 2 points
         if traj.shape[0] < 2:
             self.get_logger().info("Trajectory must have at least 2 points for smoothing.")
@@ -89,24 +90,6 @@ class LTETrajectoryNode(Node):
         x = traj[:, 0]
         y = traj[:, 1]
         z = traj[:, 2]
-
-        # # Compute distances between consecutive points
-        # dx = np.diff(x)
-        # dy = np.diff(y)
-        # dz = np.diff(z)
-        # distances = np.sqrt(dx**2 + dy**2 + dz**2)
-        # arc_length = np.concatenate(([0], np.cumsum(distances)))
-
-        # # Fit a B-spline to each component
-        # tck_x = interpolate.splrep(arc_length, x, s=smoothing)
-        # tck_y = interpolate.splrep(arc_length, y, s=smoothing)
-        # tck_z = interpolate.splrep(arc_length, z, s=smoothing)
-
-        # # Resample the trajectory with the new number of points
-        # s_new = np.linspace(0, arc_length[-1], sample_count)
-        # x_smooth = interpolate.splev(s_new, tck_x)
-        # y_smooth = interpolate.splev(s_new, tck_y)
-        # z_smooth = interpolate.splev(s_new, tck_z)
 
         px = interpolate.interp1d(np.linspace(0, 1, len(x)), x)
         x_smooth = px(np.linspace(0, 1, sample_count))
@@ -125,11 +108,15 @@ class LTETrajectoryNode(Node):
         start_point = np.array([msg.x, msg.y, msg.z])
         end_point = np.array([self.traj[-1, 0], self.traj[-1, 1], self.traj[-1, 2]])
 
-        # this constraint point should be directly over the hook; without it, the arm may not reach far enough on reproductions
-        mid_index = int(.65 * len(self.traj))
-        mid_point = np.array([self.traj[mid_index, 0], self.traj[mid_index, 1], self.traj[mid_index, 2]])
-
-        new_traj = LTE(self.traj, [start_point, mid_point, end_point], [0, mid_index, len(self.traj) - 1])
+        if self.model=="LTE":
+            # this constraint point should be directly over the hook; without it, the arm may not reach far enough on reproductions
+            mid_index = int(.65 * len(self.traj))
+            mid_point = np.array([self.traj[mid_index, 0], self.traj[mid_index, 1], self.traj[mid_index, 2]])
+            new_traj = LTE(self.traj, [start_point, mid_point, end_point], [0, mid_index, len(self.traj) - 1])
+        elif self.model=="DMP":
+            new_traj = DMP(self.traj, [start_point, end_point], [0, len(self.traj) - 1])
+        elif self.model=="JA":
+            new_traj = JA(self.traj, [start_point, end_point], [0, len(self.traj) - 1], lmbda=75)
 
         # publish the generated trajectory
         traj_msg = Float32MultiArray()

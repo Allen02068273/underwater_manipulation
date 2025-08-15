@@ -5,12 +5,13 @@ from std_msgs.msg import Float32MultiArray
 from tf2_ros.transform_broadcaster import TransformBroadcaster
 from tf2_ros.transform_listener import TransformListener
 from tf2_ros.buffer import Buffer
-from tf2_ros import LookupException, ConnectivityException
+from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
 from tf2_geometry_msgs import do_transform_pose
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import control
+from record_skill.utils.lqr import LQR
 
 import csv
 
@@ -79,9 +80,11 @@ class SkillPerformer(Node):
             [np.zeros((3, 3))],
             [np.eye(3)]
         ])
-        Q = np.diag([.8, .8, .8, 1, 1, 1])  # penalize position error less than velocity to better preserve trajectory shape
-        R = np.eye(3) * 0.005               # slightly penalize large accelerations
-        self.K, S, E = control.lqr(self.A, self.B, Q, R)
+        self.Q = np.diag([.8, .8, .8, 1, 1, 1])  # penalize position error less than velocity to better preserve trajectory shape
+        self.terminal_penalty = np.diag([10, 10, 10, 1, 1, 1])  # penalize position error more than velocity at the end of trajectory
+        self.R = np.eye(3) * 0.005               # slightly penalize large accelerations
+        self.lqr = None  # initialize later after receiving trajectory
+        # self.K, S, E = control.lqr(self.A, self.B, Q, R)
 
         # set up CSV files and writers for debugging
         self.csv_files = {}
@@ -100,7 +103,7 @@ class SkillPerformer(Node):
         # try getting the transform of one frame (child_frame) in another (frame)
         try:
             return self._tf_buffer.lookup_transform(frame, child_frame, rclpy.time.Time())
-        except (LookupException, ConnectivityException) as e:
+        except (LookupException, ConnectivityException, ExtrapolationException) as e:
             self.get_logger().info(f"Waiting for transform {repr(e)}.")
             return None
     
@@ -150,6 +153,18 @@ class SkillPerformer(Node):
         self.trajectory_index = 0
         self.lqr_timestep = self.time/len(self.trajectory)
         self.traj_done = False
+
+        self.lqr = LQR(
+            A=self.A,
+            B=self.B,
+            Q=self.Q,
+            R=self.R,
+            T=self.time,
+            dt=self.lqr_timestep,
+            mode="time-varying",
+            terminal_penalty=self.terminal_penalty
+        )
+
         self.update_lqr_target(step=True)  # initialize lqr target state
         self.lqr_target_timer = self.create_timer(self.lqr_timestep, self.update_lqr_target)
         
@@ -177,7 +192,7 @@ class SkillPerformer(Node):
             self.fsm_state = ArmState.FOLLOW_TRAJECTORY
         if self.fsm_state == ArmState.FOLLOW_TRAJECTORY and self.traj_done:
             self.fsm_state = ArmState.WAIT_AFTER_TRAJECTORY
-            wait_seconds = 1
+            wait_seconds = 3
             self.state_end_time = self.get_clock().now().nanoseconds * 1e-9 + wait_seconds
         elif self.fsm_state == ArmState.WAIT_AFTER_TRAJECTORY and self.get_clock().now().nanoseconds * 1e-9 > self.state_end_time:
             self.fsm_state = ArmState.RETURN_TO_READY
@@ -194,7 +209,8 @@ class SkillPerformer(Node):
             self.publish_state(self.state, gripper_open=True)
             # self.publish_state(self.lqr_target, gripper_open=True)
         elif self.fsm_state == ArmState.RETURN_TO_READY:
-            self.publish_state((0.000, 0.120, 0.150, 0.0,0.0,0.0), gripper_open=False)
+            self.publish_state((0.000, 0.120, 0.150, 0.0,0.0,0.0), gripper_open=False)  # lab setup
+            # self.publish_state((0.32975, -0.088792, -0.081564, 0.0,0.0,0.0), gripper_open=False)  # underwater setup
         elif self.fsm_state == ArmState.READY:
             self.step_timer.cancel()
 
@@ -222,22 +238,6 @@ class SkillPerformer(Node):
                     self.csv_writers["robot_performance"].writerow([self.get_clock().now().to_msg().sec, pos.x, pos.y, pos.z])
     
     def update_lqr_target(self, step=True):
-        # target = self.trajectory[self.trajectory_index]
-        # diff = target - self.lqr_target[:3]
-
-        # # if close enough to the target, move to target and track the next point
-        # if np.linalg.norm(diff) < (self.speed * self.time_step):
-        #     self.lqr_target = np.hstack((target, diff / self.time_step))
-        #     self.trajectory_index += 1
-        # else:  # otherwise, move towards the current target
-        #     self.lqr_target[3:] = self.speed * diff / np.linalg.norm(diff)
-        #     self.lqr_target[:3] += self.lqr_target[3:] * self.time_step
-        
-        # if self.trajectory_index >= len(self.trajectory):
-        #     self.trajectory_index = len(self.trajectory) - 1
-        #     return True
-        # return False
-
         # move the LQR target to the next trajectory step
         if step:
             if self.trajectory_index < len(self.trajectory) - 1:
@@ -277,8 +277,9 @@ class SkillPerformer(Node):
 
         target_state = np.array([pos.position.x, pos.position.y, pos.position.z, vel.position.x, vel.position.y, vel.position.z])
 
-        error = self.state - target_state
-        u = -self.K @ error
+        traj_time = self.trajectory_index * self.lqr_timestep  # current point in trajectory in time
+        
+        u = self.lqr.feedback(self.state, target_state, t=traj_time)
 
         x_dot = self.A @ self.state + self.B @ u
         self.state += x_dot * self.time_step
@@ -346,7 +347,7 @@ class SkillPerformer(Node):
         vel_msg.twist.linear.x = float(x_dot) * 10
         vel_msg.twist.linear.y = float(y_dot) * 10
         vel_msg.twist.linear.z = float(z_dot) * 10
-        self.vel_publisher.publish(vel_msg)
+        # self.vel_publisher.publish(vel_msg)
     
     def publish_pose(self, x, y, z, gripper_open):
         # yaw rotation matrix (point away from origin)
