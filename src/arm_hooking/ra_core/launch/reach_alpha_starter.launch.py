@@ -79,6 +79,13 @@ def generate_launch_description():
                 }]
             ),
         Node(
+            package='ra_core',
+            executable='current_publisher',
+            parameters=[{
+                "frequency" : 30,
+                }]
+            ),
+        Node(
             package='ra_core',#'bpl_control',
             executable='control_node'
             ),

@@ -3,3 +3,4 @@ install/
 log/
 progress_log
 data/camera_recordings/
+data/bags/

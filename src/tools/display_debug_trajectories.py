@@ -117,8 +117,8 @@ filepath = 'data/debug_trajectories/'
 # plot_xyz_overlay("Recorded 2", f"{filepath}trajectory.csv", plot_title="Trajectories")
 plot_xyz_overlay("Preprocessed Demonstration", f"{filepath}smoothed.csv", linestyle='-.')
 plot_xyz_overlay("Generalized Reproduction", f"{filepath}generalized.csv", plot_via_point=True, linestyle='--')
-# plot_xyz_overlay("LQR Target", f"{filepath}lqr_target.csv", linestyle='--')
-# plot_xyz_overlay("LQR Output", f"{filepath}lqr_output.csv")
+plot_xyz_overlay("LQR Target", f"{filepath}lqr_target.csv", linestyle='--')
+plot_xyz_overlay("LQR Output", f"{filepath}lqr_output.csv")
 plot_xyz_overlay("Robot Performance", f"{filepath}robot_performance.csv")
 
 plt.show()  # keeps the windows open

@@ -46,19 +46,10 @@ class LTETrajectoryNode(Node):
         self.write_traj_to_csv('smoothed', self.traj)
         
         # subscriber to XYZ initial positions
-        self.subscription = self.create_subscription(
-            Point,
-            'request_trajectory',
-            self.request_callback,
-            10
-        )
+        self.subscription = self.create_subscription(Point, 'request_trajectory', self.request_callback, 10)
 
         # publisher for trajectory response
-        self.publisher = self.create_publisher(
-            Float32MultiArray,
-            'gen_trajectory',
-            10
-        )
+        self.publisher = self.create_publisher(Float32MultiArray, 'gen_trajectory', 10)
         
         self.get_logger().info("LTE Trajectory Node Initialized.")
 
@@ -110,7 +101,7 @@ class LTETrajectoryNode(Node):
 
         if self.model=="LTE":
             # this constraint point should be directly over the hook; without it, the arm may not reach far enough on reproductions
-            mid_index = int(.65 * len(self.traj))
+            mid_index = int(.5 * len(self.traj))
             mid_point = np.array([self.traj[mid_index, 0], self.traj[mid_index, 1], self.traj[mid_index, 2]])
             new_traj = LTE(self.traj, [start_point, mid_point, end_point], [0, mid_index, len(self.traj) - 1])
         elif self.model=="DMP":

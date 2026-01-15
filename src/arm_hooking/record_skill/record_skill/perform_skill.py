@@ -29,7 +29,7 @@ class SkillPerformer(Node):
         super().__init__('skill_performer')
 
         # parameter for the time in seconds to complete the trajectory
-        self.declare_parameter('time', 5.0)
+        self.declare_parameter('time', 6.0)
         self.time = float(self.get_parameter('time').value)
         # parameter for the tf2 frame of the target
         self.declare_parameter('target_frame', 'target_2')
@@ -110,9 +110,9 @@ class SkillPerformer(Node):
     # request a trajectory based on initial position
     def send_initial_position(self):
         # check for subscribers
-        if self.request_publisher.get_subscription_count() == 0:
-            self.get_logger().info("Waiting for subscriber to 'request_trajectory'.")
-            return
+        # if self.request_publisher.get_subscription_count() == 0:
+        #     self.get_logger().info("Waiting for subscriber to 'request_trajectory'.")
+        #     return
         
         # try getting the transforms of the tool in the target frame and the 
         trans = self.try_get_tf(self.target_name, 'reach_alpha_tool')

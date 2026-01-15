@@ -52,16 +52,19 @@ class TargetTransforms(Node):
         # transform broadcaster for static transforms
         self.tf_static_broadcaster = StaticTransformBroadcaster(self)
         self.static_tfs = []
-        self.add_static_tfs('map', 'reach_alpha_base')  # anchors the tf tree in rviz
-        self.add_static_tfs('reach_alpha_base', 'brov_camera', position=(-0.1975, 0.1075, -0.0375), q=(1,0,0,0))  # calibrate with get_brov_cam_pose.py
+        self.add_static_tfs('map', 'reach_alpha_base')#, q=(1,0,0,0))  # anchors the tf tree in rviz
+        self.add_static_tfs('reach_alpha_base', 'brov_camera', position=(-0.20238, 0.11995, -0.04195), q=(0.9999, 0.0096161, 0.0074891, -0.0070429))  # calibrated with get_brov_cam_pose.py
+        # self.add_static_tfs('reach_alpha_base', 'brov_camera', position=(-0.1975, 0.1075, -0.0375), q=(1,0,0,0))  # estimated
         self.add_static_tfs('reach_alpha_end_effector', 'reach_alpha_camera', position=(-0.026, 0, 0.033))  # camera offset from end effector
-        self.add_static_tfs('reach_alpha_end_effector', 'reach_alpha_tool', position=(0.140, 0, 0))  # tool offset from end effector - this is the point that is recorded in trajectories
+        self.add_static_tfs('reach_alpha_end_effector', 'reach_alpha_tool', position=(0.140, 0, 0)) #(0.080, 0, 0)  # tool offset from end effector - this is the point that is recorded in trajectories
         #self.add_static_tfs('apriltag', 'target', position=(-0.05, 0, -self.tag_size/2 - 0.015))  # target offset from AprilTag - trajectories are recorded in the target frame
         for i in tag_ids:  # multiple AprilTags
-            self.add_static_tfs(f'apriltag_{i}', f'target_{i}', position=(-0.08, 0, -self.tag_size/2 - 0.025))
+            self.add_static_tfs(f'apriltag_{i}', f'target_{i}', position=(-0.08, 0.0, -self.tag_size/2 - 0.025))
         # for i in tag_ids:  # (optional) connect AprilTags
         #     self.add_static_tfs(f'apriltag_{i}', f'apriltag_{i+1}', position=(0, -0.087, 0))
         #     self.add_static_tfs(f'apriltag_{i+1}', f'apriltag_{i}', position=(0, 0.087, 0))
+        self.add_static_tfs(f'apriltag_0', f'valve', position=(-0.04+.05, 0.24+.02, 0-.01))#position=(-0.04, 0.24, 0))
+        self.add_static_tfs(f'apriltag_0', f'peg_box', position=(0.0, -0.20, 0), q=(1,0,0,0))
         self.broadcast_static_tfs()
         self.static_tf_broadcast_timer = self.create_timer(1.0, self.broadcast_static_tfs)
 
@@ -108,12 +111,12 @@ class TargetTransforms(Node):
         if msg.pose.position.x == 0.0 and msg.pose.position.y == 0.0 and msg.pose.position.z == 0.0:
             return
         
-        # remove roll component (the camera is not affected by end effector roll)
-        q = msg.pose.orientation
-        roll, pitch, yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')
-        roll = 0.0#3.14159
-        q.x, q.y, q.z, q.w = R.from_euler('xyz', [roll, pitch, yaw]).as_quat()
-        msg.pose.orientation = q
+        # # remove roll component (the camera is not affected by end effector roll)
+        # q = msg.pose.orientation
+        # roll, pitch, yaw = R.from_quat([q.x, q.y, q.z, q.w]).as_euler('xyz')
+        # roll = 0.0
+        # q.x, q.y, q.z, q.w = R.from_euler('xyz', [roll, pitch, yaw]).as_quat()
+        # msg.pose.orientation = q
         
         msg.header.frame_id = 'reach_alpha_base'
         self.end_effector_tfb.sendTransform(self.pose_to_tf(msg, 'reach_alpha_end_effector'))
@@ -133,7 +136,7 @@ class TargetTransforms(Node):
 
         # transform the pose into the base frame
         try:
-            trans_camera_to_base = self._tf_buffer.lookup_transform('reach_alpha_base', msg.header.frame_id, rclpy.time.Time())  # ideally would use msg.header.stamp, but that sometimes causes an ExtrapolationException
+            trans_camera_to_base = self._tf_buffer.lookup_transform('reach_alpha_base', msg.header.frame_id, rclpy.time.Time())  # ideally would use msg.header.stamp instead of Time(), but that sometimes causes an ExtrapolationException
         except (LookupException, ConnectivityException) as e:
             self.get_logger().info(f"Waiting for transform {repr(e)}.")
             return

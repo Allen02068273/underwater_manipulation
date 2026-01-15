@@ -25,7 +25,9 @@ setup(
         'console_scripts': [
             'visualize_trajectory = visualization.visualize_trajectory:main',
             'apriltag_pose = visualization.apriltag_pose:main',
-            'focus_detection = visualization.focus_detection:main'
+            'focus_detection = visualization.focus_detection:main',
+            'record_brov_camera_topic = visualization.record_brov_camera_topic:main',
+            'record_current_topic = visualization.record_current_topic:main'
         ],
     },
 )

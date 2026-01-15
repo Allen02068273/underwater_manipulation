@@ -29,7 +29,8 @@ setup(
             'apriltag_pose_publisher = ra_core.apriltag_pose_publisher:main',
             'control_node = ra_core.control_node:main',
             'get_brov_cam_pose = ra_core.get_brov_cam_pose:main',
-            'inverse_kinematics = ra_core.inverse_kinematics:main'
+            'inverse_kinematics = ra_core.inverse_kinematics:main',
+            'current_publisher = ra_core.current_publisher:main'
         ],
     },
 )

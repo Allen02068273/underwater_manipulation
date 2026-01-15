@@ -1,7 +1,7 @@
 Instructions to Connect to Reach Alpha 5 via Terminal
 by Nolan Allen
 14 January 2025
-Last updated 4 June 2025
+Last updated 5 January 2026
 
 Open a terminal and run the following:
   source /opt/ros/humble/setup.bash
@@ -18,7 +18,7 @@ Open subsequent terminals with the following:
 
 Next use the following commands to run the various programs:
   python3 src/tools/camera_recorder.py
-  python3 src/tools/visualize_traj.py
+  python3 src/tools/display_debug_trajectories.py
   python3 src/tools/clean_workspace.py
   python3 src/tools/reset_arm_pos.py --serial_port /dev/ttyUSB0
   ros2 launch {package} {launch_file} {param_name}:={param_value}
@@ -33,8 +33,9 @@ visualization
   focus_detection.launch.py [serial_port, apriltag_size, record_output, focus_threshold]
   visualize_trajectory.launch.py [generator, serial_port, apriltag_size]
 record_skill
-  perform_skill.launch.py [generator, serial_port, apriltag_size]
+  perform_skill.launch.py [generator, serial_port, apriltag_size, target_frame]
   record_skill.launch.py [serial_port, apriltag_size]
+  get_bag_data.launch.py [learning_model, apriltag_size, target_frame, bag_path]
 trajectory_generation
   generate_skill_csv.launch.py [generator, serial_port, apriltag_size]
 ra_core
