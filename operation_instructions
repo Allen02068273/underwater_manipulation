@@ -1,22 +1,40 @@
-Instructions to Connect to Reach Alpha 5 via Terminal
+Instructions to Connect via Terminal to the Reach Alpha 5
 by Nolan Allen
 14 January 2025
-Last updated 5 January 2026
+Last updated 21 January 2026
 
-Open a terminal and run the following:
+## LAB LAPTOP BUILDING INSTRUCTIONS
+The laptop uses a venv to manage Python libraries.
+Open a terminal and build the workspace with the following commands:
   source /opt/ros/humble/setup.bash
+  source ~/underwater_manipulation/.venv/bin/activate
   cd ~/underwater_manipulation
   colcon build
   source ./install/local_setup.bash
-If gscan2 doesn't build and you don't need to access the BROV camera stream, build with this:
+
+Open subsequent terminals with the following:
+  source /opt/ros/humble/setup.bash
+  source ~/underwater_manipulation/.venv/bin/activate
+  cd ~/underwater_manipulation
+  source ./install/local_setup.bash
+
+
+## LAB DESKTOP BUILDING INSTRUCTIONS
+The desktop isn't equipped to build gscan2, the package to access the BROV's camera stream.
+Open a terminal and build the workspace with the following commands:
+  source /opt/ros/humble/setup.bash
+  cd ~/underwater_manipulation
   colcon build --packages-skip gscam2
+  source ./install/local_setup.bash
 
 Open subsequent terminals with the following:
   source /opt/ros/humble/setup.bash
   cd ~/underwater_manipulation
   source ./install/local_setup.bash
 
-Next use the following commands to run the various programs:
+
+## GENERAL USE COMMANDS
+After building, use the following commands to run the various programs:
   python3 src/tools/camera_recorder.py
   python3 src/tools/display_debug_trajectories.py
   python3 src/tools/clean_workspace.py
@@ -24,7 +42,7 @@ Next use the following commands to run the various programs:
   ros2 launch {package} {launch_file} {param_name}:={param_value}
   rviz2
 
-Launch Files [parameters]
+Launch Files by Package [parameters]
 arm_control
   gamepad_keyboard_control.launch.py [serial_port, apriltag_size]
   master_arm_control.launch.py [master_arm_serial_port, serial_port, apriltag_size]
