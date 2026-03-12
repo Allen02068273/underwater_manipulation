@@ -41,14 +41,14 @@ def generate_launch_description():
         serial_port_arg,
         apriltag_size_arg,
         included_launch,
-        # Node(
-        #     package='arm_control',
-        #     executable='gamepad_keyboard_control'
-        #     ),
         Node(
             package='arm_control',
-            executable='master_arm_control'
+            executable='gamepad_keyboard_control'
             ),
+        # Node(
+        #     package='arm_control',
+        #     executable='master_arm_control'
+        #     ),
         Node(
             package='record_skill',
             executable='skill_recorder'

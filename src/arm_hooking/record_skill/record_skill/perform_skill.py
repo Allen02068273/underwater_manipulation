@@ -148,6 +148,10 @@ class SkillPerformer(Node):
         # reshape the flattened data into an N x 3 array
         self.trajectory = np.array(msg.data).reshape(-1, 3)
         self.get_logger().info(f"Trajectory contains {len(self.trajectory)} points.")
+
+        # log trajectory (useful when replaying bags; add 'demo' to list of csv filenames in init)
+        # for point in self.trajectory:
+        #     self.csv_writers["demo"].writerow([self.get_clock().now().to_msg().sec, point[0], point[1], point[2]])
         
         # initialize LQR data and start timer
         self.trajectory_index = 0

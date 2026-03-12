@@ -25,6 +25,12 @@ def generate_launch_description():
         default_value='valve',
         description='Target on which to perform skill (e.g. target_2 or valve)'
     )
+    # argument to set the time to complete the trajectory
+    time_arg = DeclareLaunchArgument(
+        "trajectory_duration",
+        default_value='6.0',
+        description="Time in seconds to complete the trajectory"
+    )
     # argument to set the file path to the bag to play
     bag_path_arg = DeclareLaunchArgument(
         "bag_path",
@@ -40,6 +46,7 @@ def generate_launch_description():
         generator_arg,
         apriltag_size_arg,
         target_frame_arg,
+        time_arg,
         bag_path_arg,
         Node(  # sub: request_trajectory; pub: gen_trajectory
             package='trajectory_generation',
@@ -56,6 +63,7 @@ def generate_launch_description():
             parameters=[{
                 "target_frame" : LaunchConfiguration('target_frame'),
                 "record_debug" : True,
+                "time" : LaunchConfiguration('trajectory_duration'),
                 }]
             ),
         Node(  # sub: end_effector_pose, apriltag_pose; pub: none
