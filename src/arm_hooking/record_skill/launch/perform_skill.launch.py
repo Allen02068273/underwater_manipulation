@@ -11,9 +11,9 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     # argument to choose between LTE (default) and KMP
     generator_arg = DeclareLaunchArgument(
-        'generator',
-        default_value='lte',
-        description='Choose generator: lte or kmp'
+        'learning_model',
+        default_value='LTE',
+        description='Choose learning model: LTE, DMP, or JA'
     )
     # argument to set serial port to connect to manipulator
     serial_port_arg = DeclareLaunchArgument(
@@ -32,6 +32,12 @@ def generate_launch_description():
         'target_frame',
         default_value='target_2',
         description='Target on which to perform skill (e.g. target_2)'
+    )
+    # argument to set the time to complete the trajectory
+    time_arg = DeclareLaunchArgument(
+        "trajectory_duration",
+        default_value='6.0',
+        description="Time in seconds to complete the trajectory"
     )
 
     generator_executable = PythonExpression([
@@ -58,12 +64,14 @@ def generate_launch_description():
         serial_port_arg,
         apriltag_size_arg,
         target_frame_arg,
+        time_arg,
         included_launch,
         Node(
             package='trajectory_generation',
-            executable=generator_executable,
+            executable='lte_trajectory_generator',
             parameters=[{
                 "trajectory_csv" : "data/trajectory.csv",
+                "model" : LaunchConfiguration('learning_model'),
                 "record_debug" : True,
                 }]
             ),
@@ -73,6 +81,7 @@ def generate_launch_description():
             parameters=[{
                 "serial_port" : LaunchConfiguration('serial_port'),
                 "target_frame" : LaunchConfiguration('target_frame'),
+                "time" : LaunchConfiguration('trajectory_duration'),
                 "record_debug" : True,
                 }]
             )

@@ -62,8 +62,8 @@ def generate_launch_description():
             executable='perform_skill',
             parameters=[{
                 "target_frame" : LaunchConfiguration('target_frame'),
-                "record_debug" : True,
                 "time" : LaunchConfiguration('trajectory_duration'),
+                "record_debug" : True,
                 }]
             ),
         Node(  # sub: end_effector_pose, apriltag_pose; pub: none
