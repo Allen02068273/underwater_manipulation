@@ -73,10 +73,10 @@ def generate_launch_description():
                 "apriltag_size" : LaunchConfiguration('apriltag_size'),
                 }]
             ),
-        ExecuteProcess(
-            cmd=["ros2", "bag", "play", LaunchConfiguration("bag_path"), "--topics", "/end_effector_pose", "/apriltag_pose"],
-        ),
-        # ExecuteProcess(  # use this one for bagged trajectory generator
-        #     cmd=["ros2", "bag", "play", LaunchConfiguration("bag_path"), "--topics", "/end_effector_pose", "/apriltag_pose", "/gen_trajectory"],
+        # ExecuteProcess(
+        #     cmd=["ros2", "bag", "play", LaunchConfiguration("bag_path"), "--topics", "/end_effector_pose", "/apriltag_pose"],
         # ),
+        ExecuteProcess(  # use this one for bagged trajectory generator; see commented code at line 152 of perform_skill.py to log "demo" csv
+            cmd=["ros2", "bag", "play", LaunchConfiguration("bag_path"), "--topics", "/end_effector_pose", "/apriltag_pose", "/gen_trajectory"],
+        ),
     ])
