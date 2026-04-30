@@ -1,0 +1,34 @@
+Packages and Nodes
+
+arm_control  # nodes to control the arm with a manual input device
+ gamepad_keyboard_control  # control the arm with a gamepad or the keyboard
+ master_arm_control        # control the arm with the Master Arm
+
+ra_core  # nodes for low-level interfacing with the robot
+ apriltag_pose_publisher     # publish the 3D pose of an AprilTag seen by the cameras on the Reach Alpha 5 and BlueROV
+ control_node                # takes control input and sends it to the passthrough
+ current_publisher           # requests and publishes the current levels for each joint in the arm
+ end_effector_pose_publisher # requests and publishes the pose of the arm's end effector
+ get_brov_cam_pose           # calibration: estimate the pose of the BROV camera relative to the arm
+ inverse_kinematics          # alternative IK to the robot's built-in model to provide more control
+ ra_passthrough              # communication between ROS2 nodes and robot using UDP or serial
+ target_transforms           # builds and maintains the transform tree comprising the robot's perception of the world
+ target_transforms_lab       # somehow different from target_transforms; I don't believe it is used much
+
+record_skill  # nodes for recording and reproducing movements on the robot
+ perform_skill   # reproduce a demonstration on the robot using a trajectory on a given target transform
+ plan_execution  #
+ skill_recorder  # record robot end effector trajectory to a csv file
+
+trajectory_generation  # nodes for generalizing a given trajectory to new initial points
+ generate_skill_csv          # (debug) request a trajectory and log it to a csv file
+ kmp_trajectory_generator    # (depricated, doesn't work) respond to trajectory requests with a trajectory generated via KMP
+ lte_trajectory_generator    # (misnamed) respond to trajectory requests with a trajectory generated via LTE, DMP, or JA
+ promp_trajectory_generator  # (depricated) respond to trajectory requests with a trajectory generated via ProMP (requires multiple demo trajectories)
+
+visualization  # record and visualize various data from the robot
+ apriltag_pose             # display the arm's camera feed annotated with the relative position of any visible AprilTag
+ focus_detection           # Navya Garg's focus detection code put in a ROS2 node to work with this system
+ record_brov_camera_topic  # record the brov camera feed to a file
+ record_current_topic      # record the current levels for each arm joint to a file
+ visualize_trajectory      # display a plot of the training trajectory alongside the generated trajectory for a given task, updated in realtime according to the robot's transform tree data
