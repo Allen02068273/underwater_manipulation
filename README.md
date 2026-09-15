@@ -1,1 +1,12 @@
-# underwater_manipulation
+# BLUE: Behavior Learning for Underwater Environments
+By Nolan Allen
+
+## Thesis Statement
+This thesis proposes a modular framework for autonomous underwater manipulation that integrates symbolic planning, learning from demonstration, optimal control, and probabilistic state estimation, enabling robust, adaptable, and data-efficient task execution in dynamic underwater environments.
+
+## Abstract
+Autonomous underwater manipulation is a challenging domain and an open problem in research, with performance often degraded by factors such as unpredictable underwater disturbances, currents, visual distortions, and sensing limitations. To this end, we propose a robust and modular underwater manipulation framework. Existing approaches often require extensive tuning or training data, use specific hardware setups, are unequipped to handle unexpected base movement and drift, or are unable to solve and generalize complex skills in novel task configurations. The inclusion of these design constraints sets our framework apart as a novel approach to address the challenges presented by practical deployment in underwater environments.
+
+To achieve robust skill encoding and generalization, our framework integrates high-level STRIPS-based symbolic planning to generate a sequence of predefined movements, a Learning from Demonstration (LfD) model to learn basic task movements from human demonstration and generalize them to new task configurations, and an optimal control module using a Time-Varying Linear Quadratic Regulator (TVLQR) to recover smoothly from deviations in the planned trajectory while completing the movements. We further mitigate sensor noise with an Unscented Kalman Filter (UKF) to improve task pose estimation. To demonstrate our framework as learning model-agnostic, we implement three LfD models—specifically, Laplacian Trajectory Editing (LTE), Dynamic Movement Primitives (DMP), and Jerk-Accuracy (JA)—each with a unique approach. This unified and synergistic framework enables robust and efficient training and autonomous completion of a variety of underwater manipulation tasks.
+
+We validate the framework on two real-world tasks, valve turning and loop-on-hook placement, using a Reach Alpha 5 manipulator mounted on a BlueROV underwater platform. Experimental results in laboratory and pool environments confirm the robustness, data-efficiency, adaptability, and practical potential of the framework to advance autonomous underwater manipulation. These results demonstrate our work as a useful contribution to the reliability and autonomy of underwater robotic systems.
