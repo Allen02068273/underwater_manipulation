@@ -1,4 +1,5 @@
 Packages and Nodes
+All found in underwater_manipulation/src/arm_hooking
 
 arm_control  # nodes to control the arm with a manual input device
  gamepad_keyboard_control  # control the arm with a gamepad or the keyboard
